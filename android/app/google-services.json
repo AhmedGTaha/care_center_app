@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1044025031164",
+    "project_id": "care-center-ccdca",
+    "storage_bucket": "care-center-ccdca.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1044025031164:android:c76354367c3c2bdd095a79",
+        "android_client_info": {
+          "package_name": "com.example.care_center_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCyvwr-s8TOvlPvyWWXxuUWZmmO4rj8tVA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
