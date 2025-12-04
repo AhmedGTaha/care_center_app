@@ -2,6 +2,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
+
 import 'auth_service.dart';
 import 'login_screen.dart';
 
@@ -26,11 +29,35 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   final auth = AuthService();
 
+  // ⭐ Pick avatar from gallery
   Future<void> pickAvatar() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+
     if (picked != null) {
       setState(() => avatarImage = File(picked.path));
     }
+  }
+
+  // ⭐ Compress and save avatar locally
+  Future<String> saveAvatarLocal(File file) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final avatarDir = Directory("${dir.path}/avatars");
+
+    if (!avatarDir.existsSync()) {
+      avatarDir.createSync(recursive: true);
+    }
+
+    final compressedPath =
+        "${avatarDir.path}/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg";
+
+    // Compress image
+    final compressed = await FlutterImageCompress.compressAndGetFile(
+      file.path,
+      compressedPath,
+      quality: 70,
+    );
+
+    return compressed?.path ?? "";
   }
 
   Future<void> _register() async {
@@ -38,10 +65,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() => loading = true);
 
-    // Upload avatar if selected
-    String avatarUrl = "";
+    // ⭐ Save avatar locally (ONLY if selected)
+    String avatarPath = "";
     if (avatarImage != null) {
-      avatarUrl = await auth.uploadAvatar(avatarImage!);
+      avatarPath = await saveAvatarLocal(avatarImage!);
     }
 
     final error = await auth.register(
@@ -50,13 +77,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       password: passCtrl.text.trim(),
       phone: phoneCtrl.text.trim(),
       role: role,
-      avatarUrl: avatarUrl,
+      avatarPath: avatarPath, // ⭐ Updated to use local path
     );
 
     setState(() => loading = false);
 
     if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
     } else {
       Navigator.pushReplacement(
         context,
@@ -75,14 +103,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           key: _formKey,
           child: Column(
             children: [
-              // Name
               TextFormField(
                 controller: nameCtrl,
                 decoration: const InputDecoration(labelText: "Full Name"),
                 validator: (v) => v!.isEmpty ? "Enter your name" : null,
               ),
 
-              // Email
               TextFormField(
                 controller: emailCtrl,
                 decoration: const InputDecoration(labelText: "Email"),
@@ -92,7 +118,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 },
               ),
 
-              // Phone
               TextFormField(
                 controller: phoneCtrl,
                 decoration: const InputDecoration(labelText: "Phone Number"),
@@ -105,7 +130,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 },
               ),
 
-              // Password
               TextFormField(
                 controller: passCtrl,
                 obscureText: true,
@@ -131,6 +155,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 onPressed: pickAvatar,
                 child: const Text("Choose Avatar"),
               ),
+
               if (avatarImage != null)
                 Padding(
                   padding: const EdgeInsets.all(10),

@@ -1,13 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 import '../../models/equipment_model.dart';
 import '../../services/equipment_service.dart';
 
 class EquipmentForm extends StatefulWidget {
-  final Equipment? equipment; // null = add, not null = edit
+  final Equipment? equipment;
 
   const EquipmentForm({super.key, this.equipment});
 
@@ -20,14 +21,16 @@ class _EquipmentFormState extends State<EquipmentForm> {
 
   final nameCtrl = TextEditingController();
   final descCtrl = TextEditingController();
-  final quantityCtrl = TextEditingController();
   final priceCtrl = TextEditingController();
 
   String? selectedType;
   String? selectedCondition;
-  String existingImageUrl = "";
+
+  int quantity = 1;
+  bool loading = false;
 
   File? selectedImage;
+  String oldImagePath = "";
 
   final service = EquipmentService();
 
@@ -44,183 +47,208 @@ class _EquipmentFormState extends State<EquipmentForm> {
     "Other",
   ];
 
-  final List<String> conditions = [
-    "New",
-    "Used",
-    "Like New",
-  ];
+  final List<String> conditions = ["New", "Used", "Like New"];
 
   @override
   void initState() {
     super.initState();
 
-    // ⭐ If editing → prefill all fields
     if (widget.equipment != null) {
       final eq = widget.equipment!;
-
       nameCtrl.text = eq.name;
       descCtrl.text = eq.description;
-      quantityCtrl.text = eq.quantity.toString();
       priceCtrl.text = eq.pricePerDay.toString();
+      quantity = eq.quantity;
 
       selectedType = eq.type;
       selectedCondition = eq.condition;
-      existingImageUrl = eq.imageUrl;
+      oldImagePath = eq.imagePath;
     }
   }
 
+  // -------------------- PICK + COMPRESS IMAGE --------------------
   Future<void> pickImage() async {
-    final picker = ImagePicker();
-    final result = await picker.pickImage(source: ImageSource.gallery);
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked == null) return;
 
-    if (result != null) {
-      setState(() => selectedImage = File(result.path));
-    }
+    final compressed = await FlutterImageCompress.compressAndGetFile(
+      picked.path,
+      "${picked.path}_compressed.jpg",
+      quality: 60,
+    );
+
+    setState(() => selectedImage = File(compressed?.path ?? picked.path));
   }
 
-  Future<String> uploadImage(File file) async {
-    final fileName = "equipment_${DateTime.now().millisecondsSinceEpoch}.jpg";
-    final ref = FirebaseStorage.instance.ref().child("equipment/$fileName");
-    await ref.putFile(file);
-    return await ref.getDownloadURL();
-  }
+  void setLoading(bool state) => setState(() => loading = state);
 
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.equipment != null;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(isEditing ? "Edit Equipment" : "Add Equipment"),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              TextFormField(
-                controller: nameCtrl,
-                decoration: const InputDecoration(labelText: "Name"),
-                validator: (v) => v!.isEmpty ? "Required" : null,
-              ),
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(
+            title: Text(isEditing ? "Edit Equipment" : "Add Equipment"),
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(labelText: "Name"),
+                    validator: (v) => v!.isEmpty ? "Required" : null,
+                  ),
+                  const SizedBox(height: 12),
 
-              const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: selectedType,
+                    items: equipmentTypes
+                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                        .toList(),
+                    onChanged: (v) => setState(() => selectedType = v),
+                    validator: (v) => v == null ? "Select type" : null,
+                    decoration: const InputDecoration(labelText: "Type"),
+                  ),
+                  const SizedBox(height: 12),
 
-              // ⭐ TYPE DROPDOWN
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: "Type"),
-                initialValue: selectedType,
-                items: equipmentTypes
-                    .map((t) => DropdownMenuItem(value: t, child: Text(t)))
-                    .toList(),
-                onChanged: (value) => setState(() => selectedType = value),
-                validator: (v) => v == null ? "Please select a type" : null,
-              ),
+                  TextFormField(
+                    controller: descCtrl,
+                    maxLines: 3,
+                    decoration: const InputDecoration(labelText: "Description"),
+                  ),
+                  const SizedBox(height: 12),
 
-              const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: selectedCondition,
+                    items: conditions
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                        .toList(),
+                    onChanged: (v) => setState(() => selectedCondition = v),
+                    validator: (v) => v == null ? "Select condition" : null,
+                    decoration: const InputDecoration(labelText: "Condition"),
+                  ),
+                  const SizedBox(height: 12),
 
-              TextFormField(
-                controller: descCtrl,
-                decoration: const InputDecoration(labelText: "Description"),
-                maxLines: 3,
-              ),
+                  Row(
+                    children: [
+                      const Text("Quantity"),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle, color: Colors.red),
+                        onPressed: quantity > 1
+                            ? () => setState(() => quantity--)
+                            : null,
+                      ),
+                      Text(quantity.toString(),
+                          style: const TextStyle(
+                              fontSize: 18, fontWeight: FontWeight.bold)),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle, color: Colors.green),
+                        onPressed: () => setState(() => quantity++),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
 
-              const SizedBox(height: 12),
+                  TextFormField(
+                    controller: priceCtrl,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(decimal: true),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(
+                          RegExp(r'^\d*\.?\d*$')),
+                    ],
+                    decoration:
+                        const InputDecoration(labelText: "Price Per Day"),
+                    validator: (v) {
+                      if (v == null || v.isEmpty) return "Enter price";
+                      final n = double.tryParse(v);
+                      if (n == null || n <= 0) return "Must be > 0";
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
 
-              // ⭐ CONDITION DROPDOWN
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: "Condition"),
-                initialValue: selectedCondition,
-                items: conditions
-                    .map((c) => DropdownMenuItem(value: c, child: Text(c)))
-                    .toList(),
-                onChanged: (value) => setState(() => selectedCondition = value),
-                validator: (v) => v == null ? "Please select a condition" : null,
-              ),
-
-              const SizedBox(height: 12),
-
-              TextFormField(
-                controller: quantityCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: "Quantity"),
-                validator: (v) => int.tryParse(v!) == null ? "Enter a number" : null,
-              ),
-
-              const SizedBox(height: 12),
-
-              TextFormField(
-                controller: priceCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: "Price Per Day"),
-                validator: (v) =>
-                    double.tryParse(v!) == null ? "Enter a valid number" : null,
-              ),
-
-              const SizedBox(height: 20),
-
-              // ⭐ IMAGE PICKER WITH EXISTING IMAGE SUPPORT
-              GestureDetector(
-                onTap: pickImage,
-                child: Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 55,
-                      backgroundImage: selectedImage != null
-                          ? FileImage(selectedImage!)
-                          : (existingImageUrl.isNotEmpty
-                                  ? NetworkImage(existingImageUrl)
-                                  : const AssetImage("assets/default_equipment.png")
-                             ) as ImageProvider,
+                  GestureDetector(
+                    onTap: pickImage,
+                    child: Column(
+                      children: [
+                        CircleAvatar(
+                          radius: 55,
+                          backgroundImage: selectedImage != null
+                              ? FileImage(selectedImage!)
+                              : (oldImagePath.isNotEmpty &&
+                                      File(oldImagePath).existsSync()
+                                  ? FileImage(File(oldImagePath))
+                                  : const AssetImage(
+                                      "assets/default_equipment.png"))
+                                  as ImageProvider,
+                        ),
+                        const SizedBox(height: 10),
+                        Text(isEditing ? "Change Image" : "Select Image"),
+                      ],
                     ),
-                    const SizedBox(height: 10),
-                    Text(isEditing ? "Change Image" : "Select Image"),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 25),
+
+                  ElevatedButton(
+                    onPressed: () async {
+                      if (!_formKey.currentState!.validate()) return;
+
+                      setLoading(true);
+
+                      String newImagePath = oldImagePath;
+
+                      if (selectedImage != null) {
+                        newImagePath =
+                            await service.saveLocalImage(selectedImage!);
+                      }
+
+                      final eq = Equipment(
+                        id: widget.equipment?.id ?? "",
+                        name: nameCtrl.text.trim(),
+                        type: selectedType!,
+                        description: descCtrl.text.trim(),
+                        imagePath: newImagePath,
+                        condition: selectedCondition!,
+                        quantity: quantity,
+                        status: "available",
+                        pricePerDay: double.parse(priceCtrl.text),
+                      );
+
+                      if (isEditing) {
+                        await service.updateEquipment(eq,
+                            oldImagePath: oldImagePath);
+                      } else {
+                        await service.addEquipment(eq);
+                      }
+
+                      setLoading(false);
+                      if (!mounted) return;
+
+                      Navigator.pop(context);
+                    },
+                    child: Text(isEditing ? "Update Equipment" : "Save"),
+                  ),
+                ],
               ),
-
-              const SizedBox(height: 25),
-
-              ElevatedButton(
-                onPressed: () async {
-                  if (!_formKey.currentState!.validate()) return;
-
-                  String finalImageUrl = existingImageUrl;
-
-                  // Upload new image if selected
-                  if (selectedImage != null) {
-                    finalImageUrl = await uploadImage(selectedImage!);
-                  }
-
-                  final eq = Equipment(
-                    id: widget.equipment?.id ?? "",
-                    name: nameCtrl.text.trim(),
-                    type: selectedType!,
-                    description: descCtrl.text.trim(),
-                    imageUrl: finalImageUrl,
-                    condition: selectedCondition!,
-                    quantity: int.parse(quantityCtrl.text),
-                    status: "available",
-                    pricePerDay: double.parse(priceCtrl.text),
-                  );
-
-                  if (isEditing) {
-                    await service.updateEquipment(eq);
-                  } else {
-                    await service.addEquipment(eq);
-                  }
-
-                  if (!mounted) return;
-
-                  Navigator.pop(context);
-                },
-                child: Text(isEditing ? "Update Equipment" : "Save Equipment"),
-              ),
-            ],
+            ),
           ),
         ),
-      ),
+
+        if (loading)
+          Container(
+            color: Colors.black54,
+            child: const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+          ),
+      ],
     );
   }
 }

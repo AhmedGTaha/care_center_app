@@ -1,36 +1,38 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class Donation {
-  final String id;
-  final String userId;
-  final String itemName;
-  final String type;
-  final String description;
-  final String imageUrl;
-  final DateTime createdAt;
-  final String status; // pending, approved, rejected
+  String id;
+  String itemName;
+  String type;
+  String description;
+  String imagePath;   // ⭐ local file path instead of URL
+  String status;
 
   Donation({
     required this.id,
-    required this.userId,
     required this.itemName,
     required this.type,
     required this.description,
-    required this.imageUrl,
-    required this.createdAt,
+    required this.imagePath,
     required this.status,
   });
 
-  factory Donation.fromMap(Map<String, dynamic> map, String id) {
+  Map<String, dynamic> toMap() {
+    return {
+      "itemName": itemName,
+      "type": type,
+      "description": description,
+      "imagePath": imagePath,
+      "status": status,
+    };
+  }
+
+  factory Donation.fromMap(Map<String, dynamic> map, String documentId) {
     return Donation(
-      id: id,
-      userId: map["userId"],
-      itemName: map["itemName"],
-      type: map["type"],
-      description: map["description"],
-      imageUrl: map["imageUrl"],
-      createdAt: (map["createdAt"] as Timestamp).toDate(),
-      status: map["status"],
+      id: documentId,
+      itemName: map["itemName"] ?? "",
+      type: map["type"] ?? "",
+      description: map["description"] ?? "",
+      imagePath: map["imagePath"] ?? "",
+      status: map["status"] ?? "pending",
     );
   }
 }

@@ -3,10 +3,10 @@ class Equipment {
   String name;
   String type;
   String description;
-  String imageUrl;
+  String imagePath; // LOCAL PATH
   String condition;
   int quantity;
-  String status; // available, rented, donated, maintenance
+  String status;
   double pricePerDay;
 
   Equipment({
@@ -14,7 +14,7 @@ class Equipment {
     required this.name,
     required this.type,
     required this.description,
-    required this.imageUrl,
+    required this.imagePath,
     required this.condition,
     required this.quantity,
     required this.status,
@@ -23,11 +23,11 @@ class Equipment {
 
   Map<String, dynamic> toMap() {
     return {
-      "id": id,                 // ⭐ important for updates
+      "id": id,
       "name": name,
       "type": type,
       "description": description,
-      "imageUrl": imageUrl,
+      "imagePath": imagePath,
       "condition": condition,
       "quantity": quantity,
       "status": status,
@@ -37,22 +37,14 @@ class Equipment {
 
   factory Equipment.fromMap(Map<String, dynamic> map, String documentId) {
     return Equipment(
-      id: documentId, // ⭐ always use Firestore doc ID
-
-      name: map["name"] ?? "Unknown",
-      type: map["type"] ?? "Unknown",
-      description: map["description"] ?? "No description",
-
-      imageUrl: map["imageUrl"] ?? "",
-
-      condition: map["condition"] ?? "Unknown",
-
-      quantity: (map["quantity"] is int)
-          ? map["quantity"]
-          : int.tryParse(map["quantity"].toString()) ?? 0,
-
+      id: documentId,
+      name: map["name"] ?? "",
+      type: map["type"] ?? "",
+      description: map["description"] ?? "",
+      imagePath: map["imagePath"] ?? "",
+      condition: map["condition"] ?? "",
+      quantity: map["quantity"] ?? 0,
       status: map["status"] ?? "available",
-
       pricePerDay: (map["pricePerDay"] is int)
           ? (map["pricePerDay"] as int).toDouble()
           : double.tryParse(map["pricePerDay"].toString()) ?? 0.0,
