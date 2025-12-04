@@ -23,6 +23,7 @@ class Equipment {
 
   Map<String, dynamic> toMap() {
     return {
+      "id": id,                 // ⭐ important for updates
       "name": name,
       "type": type,
       "description": description,
@@ -36,13 +37,12 @@ class Equipment {
 
   factory Equipment.fromMap(Map<String, dynamic> map, String documentId) {
     return Equipment(
-      id: documentId,
+      id: documentId, // ⭐ always use Firestore doc ID
 
       name: map["name"] ?? "Unknown",
       type: map["type"] ?? "Unknown",
       description: map["description"] ?? "No description",
 
-      // Fallback handled in UI, not here
       imageUrl: map["imageUrl"] ?? "",
 
       condition: map["condition"] ?? "Unknown",

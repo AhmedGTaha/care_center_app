@@ -7,7 +7,9 @@ import '../../models/equipment_model.dart';
 import '../../services/equipment_service.dart';
 
 class EquipmentForm extends StatefulWidget {
-  const EquipmentForm({super.key});
+  final Equipment? equipment; // null = add, not null = edit
+
+  const EquipmentForm({super.key, this.equipment});
 
   @override
   State<EquipmentForm> createState() => _EquipmentFormState();
@@ -23,6 +25,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
 
   String? selectedType;
   String? selectedCondition;
+  String existingImageUrl = "";
 
   File? selectedImage;
 
@@ -47,6 +50,25 @@ class _EquipmentFormState extends State<EquipmentForm> {
     "Like New",
   ];
 
+  @override
+  void initState() {
+    super.initState();
+
+    // ⭐ If editing → prefill all fields
+    if (widget.equipment != null) {
+      final eq = widget.equipment!;
+
+      nameCtrl.text = eq.name;
+      descCtrl.text = eq.description;
+      quantityCtrl.text = eq.quantity.toString();
+      priceCtrl.text = eq.pricePerDay.toString();
+
+      selectedType = eq.type;
+      selectedCondition = eq.condition;
+      existingImageUrl = eq.imageUrl;
+    }
+  }
+
   Future<void> pickImage() async {
     final picker = ImagePicker();
     final result = await picker.pickImage(source: ImageSource.gallery);
@@ -59,15 +81,18 @@ class _EquipmentFormState extends State<EquipmentForm> {
   Future<String> uploadImage(File file) async {
     final fileName = "equipment_${DateTime.now().millisecondsSinceEpoch}.jpg";
     final ref = FirebaseStorage.instance.ref().child("equipment/$fileName");
-
     await ref.putFile(file);
     return await ref.getDownloadURL();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isEditing = widget.equipment != null;
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Add Equipment")),
+      appBar: AppBar(
+        title: Text(isEditing ? "Edit Equipment" : "Add Equipment"),
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
@@ -82,9 +107,10 @@ class _EquipmentFormState extends State<EquipmentForm> {
 
               const SizedBox(height: 12),
 
+              // ⭐ TYPE DROPDOWN
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(labelText: "Type"),
-                value: selectedType,
+                initialValue: selectedType,
                 items: equipmentTypes
                     .map((t) => DropdownMenuItem(value: t, child: Text(t)))
                     .toList(),
@@ -102,9 +128,10 @@ class _EquipmentFormState extends State<EquipmentForm> {
 
               const SizedBox(height: 12),
 
+              // ⭐ CONDITION DROPDOWN
               DropdownButtonFormField<String>(
                 decoration: const InputDecoration(labelText: "Condition"),
-                value: selectedCondition,
+                initialValue: selectedCondition,
                 items: conditions
                     .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                     .toList(),
@@ -127,12 +154,13 @@ class _EquipmentFormState extends State<EquipmentForm> {
                 controller: priceCtrl,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: "Price Per Day"),
-                validator: (v) => double.tryParse(v!) == null ? "Enter a valid number" : null,
+                validator: (v) =>
+                    double.tryParse(v!) == null ? "Enter a valid number" : null,
               ),
 
               const SizedBox(height: 20),
 
-              // ⭐ Image Picker
+              // ⭐ IMAGE PICKER WITH EXISTING IMAGE SUPPORT
               GestureDetector(
                 onTap: pickImage,
                 child: Column(
@@ -141,11 +169,13 @@ class _EquipmentFormState extends State<EquipmentForm> {
                       radius: 55,
                       backgroundImage: selectedImage != null
                           ? FileImage(selectedImage!)
-                          : const AssetImage("assets/default_equipment.png")
-                              as ImageProvider,
+                          : (existingImageUrl.isNotEmpty
+                                  ? NetworkImage(existingImageUrl)
+                                  : const AssetImage("assets/default_equipment.png")
+                             ) as ImageProvider,
                     ),
                     const SizedBox(height: 10),
-                    const Text("Select Image"),
+                    Text(isEditing ? "Change Image" : "Select Image"),
                   ],
                 ),
               ),
@@ -156,31 +186,36 @@ class _EquipmentFormState extends State<EquipmentForm> {
                 onPressed: () async {
                   if (!_formKey.currentState!.validate()) return;
 
-                  String uploadedImageUrl = "";
+                  String finalImageUrl = existingImageUrl;
 
-                  // Upload image only if selected
+                  // Upload new image if selected
                   if (selectedImage != null) {
-                    uploadedImageUrl = await uploadImage(selectedImage!);
+                    finalImageUrl = await uploadImage(selectedImage!);
                   }
 
                   final eq = Equipment(
-                    id: "",
+                    id: widget.equipment?.id ?? "",
                     name: nameCtrl.text.trim(),
                     type: selectedType!,
                     description: descCtrl.text.trim(),
-                    imageUrl: uploadedImageUrl, // fallback handled in UI
+                    imageUrl: finalImageUrl,
                     condition: selectedCondition!,
                     quantity: int.parse(quantityCtrl.text),
                     status: "available",
                     pricePerDay: double.parse(priceCtrl.text),
                   );
 
-                  await service.addEquipment(eq);
+                  if (isEditing) {
+                    await service.updateEquipment(eq);
+                  } else {
+                    await service.addEquipment(eq);
+                  }
 
                   if (!mounted) return;
+
                   Navigator.pop(context);
                 },
-                child: const Text("Save Equipment"),
+                child: Text(isEditing ? "Update Equipment" : "Save Equipment"),
               ),
             ],
           ),

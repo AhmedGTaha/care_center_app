@@ -14,13 +14,14 @@ class EquipmentService {
     return await ref.getDownloadURL();
   }
 
-  // Add equipment
-    // Add equipment with auto generated ID
+  // Add equipment with auto ID + store the ID inside Firestore
   Future<void> addEquipment(Equipment eq) async {
-    // Create a new document with a random ID
     final docRef = db.collection("equipment").doc();
 
-    await docRef.set(eq.toMap());
+    await docRef.set({
+      ...eq.toMap(),
+      "id": docRef.id, // ⭐ Save ID for editing/deleting
+    });
   }
 
   // Update equipment
