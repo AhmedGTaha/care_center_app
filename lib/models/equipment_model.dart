@@ -3,7 +3,7 @@ class Equipment {
   String name;
   String type;
   String description;
-  String imagePath; // LOCAL PATH
+  String imagePath;
   String condition;
   int quantity;
   String status;

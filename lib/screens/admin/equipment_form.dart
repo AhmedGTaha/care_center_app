@@ -9,8 +9,13 @@ import '../../services/equipment_service.dart';
 
 class EquipmentForm extends StatefulWidget {
   final Equipment? equipment;
+  final bool isFromDonation;   // ⭐ IMPORTANT FLAG
 
-  const EquipmentForm({super.key, this.equipment});
+  const EquipmentForm({
+    super.key,
+    this.equipment,
+    this.isFromDonation = false,
+  });
 
   @override
   State<EquipmentForm> createState() => _EquipmentFormState();
@@ -34,7 +39,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
 
   final service = EquipmentService();
 
-  final List<String> equipmentTypes = [
+  final List<String> types = [
     "Wheelchair",
     "Walker",
     "Crutches",
@@ -47,7 +52,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
     "Other",
   ];
 
-  final List<String> conditions = ["New", "Used", "Like New"];
+  final List<String> conditions = ["New", "Like New", "Good", "Fair", "Poor"];
 
   @override
   void initState() {
@@ -59,14 +64,12 @@ class _EquipmentFormState extends State<EquipmentForm> {
       descCtrl.text = eq.description;
       priceCtrl.text = eq.pricePerDay.toString();
       quantity = eq.quantity;
-
       selectedType = eq.type;
       selectedCondition = eq.condition;
       oldImagePath = eq.imagePath;
     }
   }
 
-  // -------------------- PICK + COMPRESS IMAGE --------------------
   Future<void> pickImage() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked == null) return;
@@ -80,11 +83,10 @@ class _EquipmentFormState extends State<EquipmentForm> {
     setState(() => selectedImage = File(compressed?.path ?? picked.path));
   }
 
-  void setLoading(bool state) => setState(() => loading = state);
-
   @override
   Widget build(BuildContext context) {
-    final isEditing = widget.equipment != null;
+    final bool isEditing =
+        widget.equipment != null && widget.isFromDonation == false;
 
     return Stack(
       children: [
@@ -107,11 +109,11 @@ class _EquipmentFormState extends State<EquipmentForm> {
 
                   DropdownButtonFormField<String>(
                     value: selectedType,
-                    items: equipmentTypes
+                    items: types
                         .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                         .toList(),
                     onChanged: (v) => setState(() => selectedType = v),
-                    validator: (v) => v == null ? "Select type" : null,
+                    validator: (v) => v == null ? "Required" : null,
                     decoration: const InputDecoration(labelText: "Type"),
                   ),
                   const SizedBox(height: 12),
@@ -129,7 +131,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
                         .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                         .toList(),
                     onChanged: (v) => setState(() => selectedCondition = v),
-                    validator: (v) => v == null ? "Select condition" : null,
+                    validator: (v) => v == null ? "Required" : null,
                     decoration: const InputDecoration(labelText: "Condition"),
                   ),
                   const SizedBox(height: 12),
@@ -144,7 +146,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
                             ? () => setState(() => quantity--)
                             : null,
                       ),
-                      Text(quantity.toString(),
+                      Text("$quantity",
                           style: const TextStyle(
                               fontSize: 18, fontWeight: FontWeight.bold)),
                       IconButton(
@@ -161,15 +163,14 @@ class _EquipmentFormState extends State<EquipmentForm> {
                         const TextInputType.numberWithOptions(decimal: true),
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(
-                          RegExp(r'^\d*\.?\d*$')),
+                        RegExp(r'^\d*\.?\d*$'),
+                      ),
                     ],
                     decoration:
                         const InputDecoration(labelText: "Price Per Day"),
                     validator: (v) {
-                      if (v == null || v.isEmpty) return "Enter price";
-                      final n = double.tryParse(v);
-                      if (n == null || n <= 0) return "Must be > 0";
-                      return null;
+                      if (v == null || v.isEmpty) return "Required";
+                      return double.tryParse(v) != null ? null : "Invalid";
                     },
                   ),
                   const SizedBox(height: 20),
@@ -200,40 +201,40 @@ class _EquipmentFormState extends State<EquipmentForm> {
                     onPressed: () async {
                       if (!_formKey.currentState!.validate()) return;
 
-                      setLoading(true);
+                      setState(() => loading = true);
 
-                      String newImagePath = oldImagePath;
-
+                      String finalImage = oldImagePath;
                       if (selectedImage != null) {
-                        newImagePath =
+                        finalImage =
                             await service.saveLocalImage(selectedImage!);
                       }
 
                       final eq = Equipment(
-                        id: widget.equipment?.id ?? "",
-                        name: nameCtrl.text.trim(),
+                        id: isEditing ? widget.equipment!.id : "",
+                        name: nameCtrl.text,
                         type: selectedType!,
-                        description: descCtrl.text.trim(),
-                        imagePath: newImagePath,
+                        description: descCtrl.text,
+                        imagePath: finalImage,
                         condition: selectedCondition!,
                         quantity: quantity,
                         status: "available",
                         pricePerDay: double.parse(priceCtrl.text),
                       );
 
-                      if (isEditing) {
-                        await service.updateEquipment(eq,
-                            oldImagePath: oldImagePath);
+                      if (widget.isFromDonation) {
+                        await service.addEquipment(eq);     // Always ADD for donations
+                      } else if (isEditing) {
+                        await service.updateEquipment(eq, oldImagePath: oldImagePath);
                       } else {
                         await service.addEquipment(eq);
                       }
 
-                      setLoading(false);
+                      setState(() => loading = false);
                       if (!mounted) return;
-
                       Navigator.pop(context);
                     },
-                    child: Text(isEditing ? "Update Equipment" : "Save"),
+                    child:
+                        Text(isEditing ? "Update Equipment" : "Save Equipment"),
                   ),
                 ],
               ),
@@ -243,7 +244,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
 
         if (loading)
           Container(
-            color: Colors.black54,
+            color: Colors.black45,
             child: const Center(
               child: CircularProgressIndicator(color: Colors.white),
             ),

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../auth/login_screen.dart';
-import 'package:care_center_app/screens/renter/renter_equipment_list.dart';
-import '../reservations/renter_reservations_page.dart'; // coming next
-import '../donations/donation_page.dart'; // coming later
+import 'renter_equipment_list.dart';
+import '../reservations/renter_reservations_page.dart';
+import '../donations/donation_page.dart';
 
 class RenterHome extends StatelessWidget {
   const RenterHome({super.key});
@@ -20,13 +21,13 @@ class RenterHome extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Renter Home"),
+        title: const Text("Renter Dashboard"),
         centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => logout(context),
-          ),
+          )
         ],
       ),
 
@@ -39,7 +40,7 @@ class RenterHome extends StatelessWidget {
           children: [
             _dashboardButton(
               context,
-              icon: Icons.medical_services,
+              icon: Icons.medical_services_outlined,
               label: "Browse Equipment",
               page: RenterEquipmentList(),
             ),
@@ -57,9 +58,9 @@ class RenterHome extends StatelessWidget {
             ),
             _dashboardButton(
               context,
-              icon: Icons.account_circle,
+              icon: Icons.person,
               label: "Profile",
-              page: const Placeholder(), // we add soon
+              page: const Placeholder(), // Ready for profile page
             ),
           ],
         ),
@@ -67,8 +68,12 @@ class RenterHome extends StatelessWidget {
     );
   }
 
-  Widget _dashboardButton(BuildContext context,
-      {required IconData icon, required String label, required Widget page}) {
+  Widget _dashboardButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Widget page,
+  }) {
     return InkWell(
       borderRadius: BorderRadius.circular(15),
       onTap: () {
@@ -88,12 +93,14 @@ class RenterHome extends StatelessWidget {
           children: [
             Icon(icon, size: 42, color: Colors.green),
             const SizedBox(height: 12),
-            Text(label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                )),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),

@@ -6,6 +6,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'auth_service.dart';
+import '../constants/defaults.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -29,7 +30,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   final auth = AuthService();
 
-  // ⭐ Pick avatar from gallery
+  // ----------------------------------------------------------
+  // PICK AVATAR
+  // ----------------------------------------------------------
   Future<void> pickAvatar() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
 
@@ -38,7 +41,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  // ⭐ Compress and save avatar locally
+  // ----------------------------------------------------------
+  // COMPRESS + SAVE LOCALLY
+  // ----------------------------------------------------------
   Future<String> saveAvatarLocal(File file) async {
     final dir = await getApplicationDocumentsDirectory();
     final avatarDir = Directory("${dir.path}/avatars");
@@ -47,28 +52,30 @@ class _RegisterScreenState extends State<RegisterScreen> {
       avatarDir.createSync(recursive: true);
     }
 
-    final compressedPath =
+    final outputPath =
         "${avatarDir.path}/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg";
 
-    // Compress image
     final compressed = await FlutterImageCompress.compressAndGetFile(
       file.path,
-      compressedPath,
+      outputPath,
       quality: 70,
     );
 
     return compressed?.path ?? "";
   }
 
+  // ----------------------------------------------------------
+  // REGISTER USER
+  // ----------------------------------------------------------
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => loading = true);
 
-    // ⭐ Save avatar locally (ONLY if selected)
-    String avatarPath = "";
+    // Save avatar (optional)
+    String avatarUrl = "";
     if (avatarImage != null) {
-      avatarPath = await saveAvatarLocal(avatarImage!);
+      avatarUrl = await saveAvatarLocal(avatarImage!);
     }
 
     final error = await auth.register(
@@ -77,14 +84,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       password: passCtrl.text.trim(),
       phone: phoneCtrl.text.trim(),
       role: role,
-      avatarPath: avatarPath, // ⭐ Updated to use local path
+      avatarUrl: avatarUrl, // FIXED PARAMETER
     );
 
     setState(() => loading = false);
 
     if (error != null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(error)));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
     } else {
       Navigator.pushReplacement(
         context,
@@ -93,6 +101,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
+  // ----------------------------------------------------------
+  // UI
+  // ----------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -113,7 +124,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 controller: emailCtrl,
                 decoration: const InputDecoration(labelText: "Email"),
                 validator: (v) {
-                  if (v == null || !v.contains("@")) return "Enter valid email";
+                  if (v == null || !v.contains("@")) return "Enter a valid email";
                   return null;
                 },
               ),
@@ -135,11 +146,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 obscureText: true,
                 decoration: const InputDecoration(labelText: "Password"),
                 validator: (v) =>
-                    v!.length < 6 ? "Min 6 character password" : null,
+                    v!.length < 6 ? "Min 6 characters required" : null,
               ),
 
               const SizedBox(height: 15),
               const Text("Select Role"),
+
               DropdownButton<String>(
                 value: role,
                 items: const [
@@ -151,6 +163,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               const SizedBox(height: 20),
               const Text("Profile Picture (optional)"),
+
               ElevatedButton(
                 onPressed: pickAvatar,
                 child: const Text("Choose Avatar"),
@@ -166,21 +179,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
 
               const SizedBox(height: 20),
+
               ElevatedButton(
                 onPressed: loading ? null : _register,
                 child: loading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text("Create Account"),
-              ),
-
-              TextButton(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  );
-                },
-                child: const Text("Already have an account? Login"),
               ),
             ],
           ),

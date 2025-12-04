@@ -1,18 +1,21 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import '../../services/donation_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 import '../../models/donation_model.dart';
-import '../../services/equipment_service.dart';
 import '../../models/equipment_model.dart';
+import '../../services/donation_service.dart';
+import '../../services/equipment_service.dart';
+import '../admin/equipment_form.dart';
 
 class AdminDonationsPage extends StatelessWidget {
-  const AdminDonationsPage({super.key});
+  AdminDonationsPage({super.key});
+
+  final donationService = DonationService();
+  final equipmentService = EquipmentService();
 
   @override
   Widget build(BuildContext context) {
-    final donationService = DonationService();
-    final equipmentService = EquipmentService();
-
     return Scaffold(
       appBar: AppBar(
         title: const Text("Review Donations"),
@@ -21,7 +24,9 @@ class AdminDonationsPage extends StatelessWidget {
       body: StreamBuilder<List<Donation>>(
         stream: donationService.getAllDonations(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
           final donations = snapshot.data!;
           if (donations.isEmpty) {
@@ -34,47 +39,96 @@ class AdminDonationsPage extends StatelessWidget {
             itemBuilder: (_, index) {
               final d = donations[index];
 
-              final File? localImage =
-                  d.imagePath != null && d.imagePath!.isNotEmpty && File(d.imagePath!).existsSync()
-                      ? File(d.imagePath!)
-                      : null;
-
               return Card(
                 elevation: 3,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 margin: const EdgeInsets.only(bottom: 14),
                 child: Padding(
                   padding: const EdgeInsets.all(15),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // ------------------------------
+                      // ITEM INFO
+                      // ------------------------------
                       Text(
                         d.itemName,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        style: const TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 6),
+
                       Text("Type: ${d.type}"),
-                      Text("Description: ${d.description}"),
-                      const SizedBox(height: 12),
+                      Text("Quantity: ${d.quantity}"),
 
-                      // ⭐ Display Local Image or Placeholder
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: localImage != null
-                            ? Image.file(localImage, height: 140, width: double.infinity, fit: BoxFit.cover)
-                            : Image.asset("assets/default_equipment.png",
-                                height: 140, width: double.infinity, fit: BoxFit.cover),
+                      const SizedBox(height: 6),
+
+                      // ------------------------------
+                      // DONOR INFO
+                      // ------------------------------
+                      FutureBuilder<DocumentSnapshot>(
+                        future: FirebaseFirestore.instance
+                            .collection("users")
+                            .doc(d.userId)
+                            .get(),
+                        builder: (context, userSnap) {
+                          if (!userSnap.hasData) {
+                            return const Text(
+                              "Loading donor info...",
+                              style: TextStyle(fontStyle: FontStyle.italic),
+                            );
+                          }
+
+                          final user = userSnap.data!;
+                          final name = user["name"] ?? "Unknown User";
+                          final email = user["email"] ?? "No Email";
+                          final phone = user["phone"] ?? "No Phone";
+
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const SizedBox(height: 6),
+                              Text(
+                                "Donated by: $name",
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                              Text("Email: $email"),
+                              Text("Phone: $phone"),
+                              const SizedBox(height: 10),
+                            ],
+                          );
+                        },
                       ),
 
-                      const SizedBox(height: 12),
+                      // ------------------------------
+                      // IMAGE
+                      // ------------------------------
+                      if (d.imagePath.isNotEmpty)
+                        Image.file(
+                          File(d.imagePath),
+                          height: 130,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
 
-                      _statusBadge(d.status),
                       const SizedBox(height: 10),
 
+                      // ------------------------------
+                      // STATUS BADGE
+                      // ------------------------------
+                      _statusBadge(d.status),
+
+                      const SizedBox(height: 10),
+
+                      // ------------------------------
+                      // ACTION BUTTONS
+                      // ------------------------------
                       if (d.status == "pending")
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
+                            // Reject button
                             TextButton(
                               onPressed: () async {
                                 await donationService.rejectDonation(d.id);
@@ -84,30 +138,34 @@ class AdminDonationsPage extends StatelessWidget {
                                 style: TextStyle(color: Colors.red),
                               ),
                             ),
-                            const SizedBox(width: 10),
+
+                            const SizedBox(width: 12),
+
+                            // Accept button
                             ElevatedButton(
                               onPressed: () async {
                                 await donationService.approveDonation(d.id);
 
-                                // ⭐ Add approved donation to inventory (Local storage compatible)
+                                // Convert donation → Equipment
                                 final equipment = Equipment(
-                                  id: "", // Firestore auto ID
+                                  id: "",
                                   name: d.itemName,
                                   type: d.type,
                                   description: d.description,
-                                  imagePath: d.imagePath ?? "",
-                                  condition: "Used",
-                                  quantity: 1,
+                                  imagePath: d.imagePath,
+                                  condition: d.condition,
+                                  quantity: d.quantity,
                                   status: "available",
                                   pricePerDay: 0,
                                 );
 
-                                await equipmentService.addEquipment(equipment);
-
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(
-                                    content: Text("${d.itemName} added to inventory."),
-                                    backgroundColor: Colors.green,
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => EquipmentForm(
+                                      equipment: equipment,
+                                      isFromDonation: true,
+                                    ),
                                   ),
                                 );
                               },
@@ -126,8 +184,11 @@ class AdminDonationsPage extends StatelessWidget {
     );
   }
 
+  // ------------------------------
+  // STATUS BADGE
+  // ------------------------------
   Widget _statusBadge(String status) {
-    Color color = status == "approved"
+    final color = status == "approved"
         ? Colors.green
         : status == "rejected"
             ? Colors.red
@@ -141,7 +202,10 @@ class AdminDonationsPage extends StatelessWidget {
       ),
       child: Text(
         status.toUpperCase(),
-        style: TextStyle(color: color, fontWeight: FontWeight.bold),
+        style: TextStyle(
+          color: color,
+          fontWeight: FontWeight.bold,
+        ),
       ),
     );
   }

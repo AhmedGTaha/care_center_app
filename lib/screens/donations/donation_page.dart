@@ -1,7 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../services/donation_service.dart';
 
 class DonationPage extends StatefulWidget {
@@ -16,7 +19,11 @@ class _DonationPageState extends State<DonationPage> {
 
   final itemCtrl = TextEditingController();
   final descCtrl = TextEditingController();
+
   String type = "Wheelchair";
+  String condition = "Good";     // ⭐ DEFAULT VALUE
+
+  int quantity = 1;
 
   File? selectedImage;
   final service = DonationService();
@@ -28,6 +35,26 @@ class _DonationPageState extends State<DonationPage> {
     }
   }
 
+  Future<String> saveDonationImage(File file) async {
+    final dir = await getApplicationDocumentsDirectory();
+    final donateDir = Directory("${dir.path}/donations");
+
+    if (!donateDir.existsSync()) {
+      donateDir.createSync(recursive: true);
+    }
+
+    final output =
+        "${donateDir.path}/don_${DateTime.now().millisecondsSinceEpoch}.jpg";
+
+    final compressed = await FlutterImageCompress.compressAndGetFile(
+      file.path,
+      output,
+      quality: 70,
+    );
+
+    return compressed?.path ?? "";
+  }
+
   Future<void> submitDonation() async {
     if (!_formKey.currentState!.validate() || selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -37,15 +64,16 @@ class _DonationPageState extends State<DonationPage> {
     }
 
     final uid = FirebaseAuth.instance.currentUser!.uid;
-
-    final imageUrl = await service.uploadDonationImage(selectedImage!);
+    final path = await saveDonationImage(selectedImage!);
 
     await service.submitDonation(
       userId: uid,
-      itemName: itemCtrl.text,
+      itemName: itemCtrl.text.trim(),
       type: type,
-      description: descCtrl.text,
-      imageUrl: imageUrl,
+      description: descCtrl.text.trim(),
+      imagePath: path,
+      quantity: quantity,
+      condition: condition,   // ⭐ NEW FIELD
     );
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -87,30 +115,61 @@ class _DonationPageState extends State<DonationPage> {
               TextFormField(
                 controller: itemCtrl,
                 decoration: const InputDecoration(labelText: "Item Name"),
-                validator: (v) =>
-                    v!.isEmpty ? "Enter the equipment name" : null,
+                validator: (v) => v!.isEmpty ? "Enter the equipment name" : null,
               ),
 
               const SizedBox(height: 15),
 
               DropdownButtonFormField(
                 decoration: const InputDecoration(labelText: "Type"),
-                initialValue: type,
+                value: type,
                 items: const [
                   DropdownMenuItem(value: "Wheelchair", child: Text("Wheelchair")),
                   DropdownMenuItem(value: "Walker", child: Text("Walker")),
                   DropdownMenuItem(value: "Crutches", child: Text("Crutches")),
                   DropdownMenuItem(value: "Bed", child: Text("Hospital Bed")),
-                  DropdownMenuItem(value: "Oxygen Machine", child: Text("Oxygen Machine")),
-                  DropdownMenuItem(value: "Medical Monitor", child: Text("Medical Monitor")),
-                  DropdownMenuItem(value: "Mobility Scooter", child: Text("Mobility Scooter")),
-                  DropdownMenuItem(value: "Hoist", child: Text("Lift / Hoist")),
-                  DropdownMenuItem(value: "Chair", child: Text("Hospital Chair")),
                   DropdownMenuItem(value: "Other", child: Text("Other")),
                 ],
-                onChanged: (value) {
-                  setState(() => type = value!);
-                },
+                onChanged: (v) => setState(() => type = v!),
+              ),
+
+              const SizedBox(height: 15),
+
+              // ⭐ NEW CONDITION DROPDOWN
+              DropdownButtonFormField(
+                decoration: const InputDecoration(labelText: "Condition"),
+                value: condition,
+                items: const [
+                  DropdownMenuItem(value: "New", child: Text("New")),
+                  DropdownMenuItem(value: "Like New", child: Text("Like New")),
+                  DropdownMenuItem(value: "Good", child: Text("Good")),
+                  DropdownMenuItem(value: "Fair", child: Text("Fair")),
+                  DropdownMenuItem(value: "Poor", child: Text("Poor")),
+                ],
+                onChanged: (v) => setState(() => condition = v!),
+              ),
+
+              const SizedBox(height: 15),
+
+              Row(
+                children: [
+                  const Text("Quantity", style: TextStyle(fontSize: 16)),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.remove_circle, color: Colors.red),
+                    onPressed: quantity > 1
+                        ? () => setState(() => quantity--)
+                        : null,
+                  ),
+                  Text(
+                    quantity.toString(),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle, color: Colors.green),
+                    onPressed: () => setState(() => quantity++),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 15),
@@ -119,8 +178,7 @@ class _DonationPageState extends State<DonationPage> {
                 controller: descCtrl,
                 decoration: const InputDecoration(labelText: "Description"),
                 maxLines: 3,
-                validator: (v) =>
-                    v!.isEmpty ? "Enter a description" : null,
+                validator: (v) => v!.isEmpty ? "Enter a description" : null,
               ),
 
               const SizedBox(height: 25),
@@ -131,7 +189,7 @@ class _DonationPageState extends State<DonationPage> {
                   onPressed: submitDonation,
                   child: const Text("Submit Donation"),
                 ),
-              )
+              ),
             ],
           ),
         ),

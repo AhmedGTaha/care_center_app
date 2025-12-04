@@ -27,5 +27,5 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/default_equipment.png
-    - assets/default_avatar.jpg
+  - assets/default_avatar.jpg
+  - assets/default_equipment.png

@@ -24,18 +24,34 @@ class _ReservePageState extends State<ReservePage> {
       firstDate: DateTime.now(),
       lastDate: DateTime(2030),
     );
+
     if (picked != null) {
-      setState(() => startDate = picked);
+      setState(() {
+        startDate = picked;
+
+        // Reset end date if it is before start date
+        if (endDate != null && endDate!.isBefore(startDate!)) {
+          endDate = null;
+        }
+      });
     }
   }
 
   Future<void> pickEndDate() async {
+    if (startDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please pick a start date first")),
+      );
+      return;
+    }
+
     final picked = await showDatePicker(
       context: context,
-      initialDate: startDate ?? DateTime.now(),
-      firstDate: startDate ?? DateTime.now(),
+      initialDate: startDate!,
+      firstDate: startDate!,
       lastDate: DateTime(2030),
     );
+
     if (picked != null) {
       setState(() => endDate = picked);
     }
@@ -43,8 +59,16 @@ class _ReservePageState extends State<ReservePage> {
 
   Future<void> submitReservation() async {
     if (startDate == null || endDate == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text("Select both dates")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Select both dates")),
+      );
+      return;
+    }
+
+    if (endDate!.isBefore(startDate!)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("End date cannot be before start date")),
+      );
       return;
     }
 
@@ -52,17 +76,22 @@ class _ReservePageState extends State<ReservePage> {
 
     final uid = FirebaseAuth.instance.currentUser!.uid;
 
+    // Save reservation
     await FirebaseFirestore.instance.collection("reservations").add({
       "equipmentId": widget.eq.id,
       "equipmentName": widget.eq.name,
       "userId": uid,
-      "startDate": startDate!,
-      "endDate": endDate!,
+      "startDate": startDate,
+      "endDate": endDate,
       "status": "pending",
       "createdAt": Timestamp.now(),
     });
 
     setState(() => loading = false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Reservation submitted")),
+    );
 
     Navigator.pop(context);
   }
@@ -70,23 +99,38 @@ class _ReservePageState extends State<ReservePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Reserve Equipment")),
+      appBar: AppBar(
+        title: Text("Reserve ${widget.eq.name}"),
+        centerTitle: true,
+      ),
+
       body: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            // START DATE BUTTON
             ElevatedButton(
               onPressed: pickStartDate,
               child: Text(
-                  startDate == null ? "Pick Start Date" : startDate.toString()),
+                startDate == null
+                    ? "Pick Start Date"
+                    : "Start: ${startDate!.toLocal()}".split(".")[0],
+              ),
             ),
+
+            const SizedBox(height: 10),
+
+            // END DATE BUTTON
             ElevatedButton(
               onPressed: pickEndDate,
               child: Text(
-                  endDate == null ? "Pick End Date" : endDate.toString()),
+                endDate == null
+                    ? "Pick End Date"
+                    : "End: ${endDate!.toLocal()}".split(".")[0],
+              ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 25),
 
             SizedBox(
               width: double.infinity,

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+
 import '../../auth/login_screen.dart';
 import 'admin_equipment_list.dart';
-import '../reservations/admin_reservations_page.dart'; // we will create this in next step
+import '../reservations/admin_reservations_page.dart';
+import '../donations/admin_donations_page.dart';
 
 class AdminHome extends StatelessWidget {
   const AdminHome({super.key});
@@ -38,7 +40,7 @@ class AdminHome extends StatelessWidget {
           children: [
             _dashboardButton(
               context,
-              icon: Icons.inventory,
+              icon: Icons.inventory_2,
               label: "Manage Equipment",
               page: AdminEquipmentList(),
             ),
@@ -52,13 +54,13 @@ class AdminHome extends StatelessWidget {
               context,
               icon: Icons.volunteer_activism,
               label: "Donations",
-              page: const Placeholder(), // we add later
+              page: AdminDonationsPage(),
             ),
             _dashboardButton(
               context,
               icon: Icons.analytics,
               label: "Reports",
-              page: const Placeholder(), // we add later
+              page: const Placeholder(),
             ),
           ],
         ),
@@ -66,8 +68,12 @@ class AdminHome extends StatelessWidget {
     );
   }
 
-  Widget _dashboardButton(BuildContext context,
-      {required IconData icon, required String label, required Widget page}) {
+  Widget _dashboardButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required Widget page,
+  }) {
     return InkWell(
       borderRadius: BorderRadius.circular(15),
       onTap: () {
@@ -87,12 +93,14 @@ class AdminHome extends StatelessWidget {
           children: [
             Icon(icon, size: 42, color: Colors.blue),
             const SizedBox(height: 12),
-            Text(label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                )),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
       ),
