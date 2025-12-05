@@ -1,6 +1,10 @@
 import 'dart:io';
+
+import 'package:care_center_app/screens/renter/reserve_page.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/equipment_model.dart';
+import '../../models/reservation_model.dart';
 
 class EquipmentDetails extends StatelessWidget {
   final Equipment eq;
@@ -36,6 +40,26 @@ class EquipmentDetails extends StatelessWidget {
             Text("Quantity: ${eq.quantity}"),
             const SizedBox(height: 10),
             Text("Price Per Day: BD ${eq.pricePerDay}"),
+
+            // Reserve Button
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () {
+                // Navigate to the ReservePage with the equipment data
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ReservePage(eq: eq),  // Passing equipment data
+                  ),
+                );
+              },
+              icon: const Icon(Icons.calendar_today),
+              label: const Text("Reserve Equipment"),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.all(15),
+                backgroundColor: Colors.green,  // Button color
+              ),
+            ),
           ],
         ),
       ),

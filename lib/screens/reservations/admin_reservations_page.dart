@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/reservation_model.dart';
 import '../../services/reservation_service.dart';
 import '../../services/equipment_service.dart';
@@ -19,11 +20,25 @@ class AdminReservationsPage extends StatelessWidget {
       body: StreamBuilder<List<Reservation>>(
         stream: reservationService.getAllReservations(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
           final reservations = snapshot.data!;
           if (reservations.isEmpty) {
-            return const Center(child: Text("No reservations yet."));
+            return const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.event_busy, size: 80, color: Colors.grey),
+                  SizedBox(height: 20),
+                  Text(
+                    "No reservations yet.",
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                ],
+              ),
+            );
           }
 
           return ListView.builder(
@@ -33,7 +48,8 @@ class AdminReservationsPage extends StatelessWidget {
               final res = reservations[index];
 
               return Card(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
                 elevation: 3,
                 margin: const EdgeInsets.only(bottom: 12),
                 child: Padding(
@@ -41,34 +57,116 @@ class AdminReservationsPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(res.equipmentName,
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 6),
-                      Text("From: ${res.startDate.toString().split(' ')[0]}"),
-                      Text("To:   ${res.endDate.toString().split(' ')[0]}"),
-                      const SizedBox(height: 6),
+                      // Equipment & User Info
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  res.equipmentName,
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  res.equipmentType,
+                                  style: const TextStyle(color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          ),
+                          _statusBadge(res.status),
+                        ],
+                      ),
 
-                      _statusBadge(res.status),
+                      const SizedBox(height: 10),
+
+                      // Get User Info
+                      FutureBuilder<DocumentSnapshot>(
+                        future: FirebaseFirestore.instance
+                            .collection("users")
+                            .doc(res.userId)
+                            .get(),
+                        builder: (context, userSnap) {
+                          if (!userSnap.hasData) {
+                            return const Text("Loading user...");
+                          }
+
+                          final user = userSnap.data!;
+                          final name = user["name"] ?? "Unknown";
+                          final phone = user["phone"] ?? "N/A";
+
+                          return Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Renter: $name",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                Text("Phone: $phone"),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+
+                      const Divider(height: 20),
+
+                      // Rental Details
+                      _infoRow(
+                          Icons.calendar_today,
+                          "Start: ${res.startDate.toString().split(' ')[0]}"),
+                      const SizedBox(height: 6),
+                      _infoRow(Icons.event,
+                          "End: ${res.endDate.toString().split(' ')[0]}"),
+                      const SizedBox(height: 6),
+                      _infoRow(Icons.access_time,
+                          "Duration: ${res.rentalDays} days"),
+                      const SizedBox(height: 6),
+                      _infoRow(Icons.payments,
+                          "Total: BD ${res.totalCost.toStringAsFixed(2)}"),
 
                       const SizedBox(height: 12),
 
+                      // Lifecycle Status
+                      if (res.status == "approved")
+                        _lifecycleDropdown(context, res, reservationService),
+
+                      const SizedBox(height: 12),
+
+                      // Action Buttons
                       if (res.status == "pending")
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            TextButton(
-                              style: TextButton.styleFrom(foregroundColor: Colors.red),
+                            TextButton.icon(
+                              style: TextButton.styleFrom(
+                                  foregroundColor: Colors.red),
                               onPressed: () {
-                                _reject(reservationService, res.id, context);
+                                _reject(
+                                    reservationService, res.id, context);
                               },
-                              child: const Text("Reject"),
+                              icon: const Icon(Icons.cancel),
+                              label: const Text("Reject"),
                             ),
                             const SizedBox(width: 10),
-                            ElevatedButton(
+                            ElevatedButton.icon(
                               onPressed: () {
-                                _approve(reservationService, equipmentService, res, context);
+                                _approve(reservationService, equipmentService,
+                                    res, context);
                               },
-                              child: const Text("Approve"),
+                              icon: const Icon(Icons.check_circle),
+                              label: const Text("Approve"),
                             ),
                           ],
                         ),
@@ -85,44 +183,141 @@ class AdminReservationsPage extends StatelessWidget {
 
   Widget _statusBadge(String status) {
     Color color;
+    IconData icon;
+
     switch (status) {
       case "approved":
         color = Colors.green;
+        icon = Icons.check_circle;
         break;
       case "rejected":
         color = Colors.red;
+        icon = Icons.cancel;
         break;
       default:
         color = Colors.orange;
+        icon = Icons.pending;
     }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration:
-          BoxDecoration(color: color.withOpacity(.2), borderRadius: BorderRadius.circular(20)),
-      child: Text(
-        status.toUpperCase(),
-        style: TextStyle(color: color, fontWeight: FontWeight.bold),
+      decoration: BoxDecoration(
+        color: color.withOpacity(.2),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 5),
+          Text(
+            status.toUpperCase(),
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  void _reject(ReservationService service, String id, BuildContext context) async {
-    await service.rejectReservation(id);
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text("Reservation Rejected")));
+  Widget _infoRow(IconData icon, String text) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: Colors.blue),
+        const SizedBox(width: 8),
+        Text(text),
+      ],
+    );
   }
 
-  void _approve(
-      ReservationService service,
-      EquipmentService eqService,
-      Reservation res,
-      BuildContext context) async {
-    // approve reservation
+  Widget _lifecycleDropdown(
+      BuildContext context, Reservation res, ReservationService service) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.track_changes, color: Colors.green),
+          const SizedBox(width: 10),
+          const Text(
+            "Lifecycle:",
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: DropdownButton<String>(
+              value: res.lifecycleStatus,
+              isExpanded: true,
+              items: const [
+                DropdownMenuItem(
+                    value: "Reserved", child: Text("Reserved")),
+                DropdownMenuItem(
+                    value: "Checked Out", child: Text("Checked Out")),
+                DropdownMenuItem(
+                    value: "Returned", child: Text("Returned")),
+                DropdownMenuItem(
+                    value: "Maintenance", child: Text("Maintenance")),
+              ],
+              onChanged: (newStatus) async {
+                if (newStatus != null) {
+                  await service.updateLifecycleStatus(res.id, newStatus);
+
+                  // If returned, increase equipment quantity back
+                  if (newStatus == "Returned") {
+                    final eqDoc = await FirebaseFirestore.instance
+                        .collection("equipment")
+                        .doc(res.equipmentId)
+                        .get();
+
+                    if (eqDoc.exists) {
+                      int qty = eqDoc["quantity"];
+                      await FirebaseFirestore.instance
+                          .collection("equipment")
+                          .doc(res.equipmentId)
+                          .update({"quantity": qty + 1});
+                    }
+                  }
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("Status updated to $newStatus"),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _reject(
+      ReservationService service, String id, BuildContext context) async {
+    await service.rejectReservation(id);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Reservation Rejected"),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  void _approve(ReservationService service, EquipmentService eqService,
+      Reservation res, BuildContext context) async {
+    // Approve reservation
     await service.approveReservation(res.id);
 
-    // update equipment quantity
-    final eqDoc = await eqService.db.collection("equipment").doc(res.equipmentId).get();
+    // Decrease equipment quantity
+    final eqDoc =
+        await eqService.db.collection("equipment").doc(res.equipmentId).get();
 
     if (eqDoc.exists) {
       int qty = eqDoc["quantity"];
@@ -134,7 +329,11 @@ class AdminReservationsPage extends StatelessWidget {
       }
     }
 
-    ScaffoldMessenger.of(context)
-        .showSnackBar(const SnackBar(content: Text("Reservation Approved")));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Reservation Approved"),
+        backgroundColor: Colors.green,
+      ),
+    );
   }
 }
