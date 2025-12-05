@@ -57,7 +57,7 @@ class _ReservePageState extends State<ReservePage> {
         checkingAvailability = false;
         isAvailable = false;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -131,7 +131,6 @@ class _ReservePageState extends State<ReservePage> {
     if (startDate == null || endDate == null) return false;
 
     try {
-      // Query overlapping reservations - FIXED: Removed order by to avoid permission issues
       final snapshot = await FirebaseFirestore.instance
           .collection("reservations")
           .where("equipmentId", isEqualTo: widget.eq.id)
@@ -151,11 +150,10 @@ class _ReservePageState extends State<ReservePage> {
         }
       }
 
-      // Check if equipment is available
       return (availableQuantity - reservedCount) > 0;
     } catch (e) {
       debugPrint("Error checking date availability: $e");
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -164,7 +162,7 @@ class _ReservePageState extends State<ReservePage> {
           ),
         );
       }
-      
+
       return false;
     }
   }
@@ -187,7 +185,6 @@ class _ReservePageState extends State<ReservePage> {
     setState(() => loading = true);
 
     try {
-      // Check availability for selected dates
       final available = await _checkDateAvailability();
 
       if (!available) {
@@ -233,9 +230,9 @@ class _ReservePageState extends State<ReservePage> {
       }
     } catch (e) {
       setState(() => loading = false);
-      
+
       debugPrint("Error submitting reservation: $e");
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

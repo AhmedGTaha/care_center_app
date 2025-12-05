@@ -311,7 +311,8 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
                     final isDonated = eq.pricePerDay == 0;
 
                     return Card(
-                      elevation: 3,
+                      elevation: 5,
+                      shadowColor: Colors.black.withOpacity(0.3),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
