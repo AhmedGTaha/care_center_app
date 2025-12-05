@@ -24,8 +24,9 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
   bool submitting = false;
 
   // Guest fixed info
+  final String guestUserId = "guest_user"; // Fixed guest user ID
   final String guestName = "Guest";
-  final String guestEmail = "guest@gmail.com";
+  final String guestEmail = "guest@example.com";
   final String guestPhone = "00000000";
 
   Future<void> pickImage() async {
@@ -36,30 +37,46 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
   }
 
   Future<String> saveDonationImage(File file) async {
-    final dir = await getApplicationDocumentsDirectory();
-    final donateDir = Directory("${dir.path}/donations");
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final donateDir = Directory("${dir.path}/donations");
 
-    if (!donateDir.existsSync()) {
-      donateDir.createSync(recursive: true);
+      if (!donateDir.existsSync()) {
+        donateDir.createSync(recursive: true);
+      }
+
+      final output =
+          "${donateDir.path}/don_${DateTime.now().millisecondsSinceEpoch}.jpg";
+
+      final compressed = await FlutterImageCompress.compressAndGetFile(
+        file.path,
+        output,
+        quality: 70,
+      );
+
+      return compressed?.path ?? "";
+    } catch (e) {
+      debugPrint("Error saving donation image: $e");
+      return "";
     }
-
-    final output =
-        "${donateDir.path}/don_${DateTime.now().millisecondsSinceEpoch}.jpg";
-
-    final compressed = await FlutterImageCompress.compressAndGetFile(
-      file.path,
-      output,
-      quality: 70,
-    );
-
-    return compressed?.path ?? "";
   }
 
   Future<void> submitDonation() async {
-    if (!_formKey.currentState!.validate() || selectedImage == null) {
+    if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Complete all fields and upload an image"),
+          content: Text("Please complete all required fields"),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    if (selectedImage == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please upload an image of the equipment"),
+          backgroundColor: Colors.orange,
         ),
       );
       return;
@@ -67,36 +84,51 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
 
     setState(() => submitting = true);
 
-    final path = await saveDonationImage(selectedImage!);
+    try {
+      final path = await saveDonationImage(selectedImage!);
 
-    // Submit donation with guest info
-    await FirebaseFirestore.instance.collection("donations").add({
-      "userId": "guest",
-      "itemName": itemCtrl.text.trim(),
-      "type": type,
-      "description": descCtrl.text.trim(),
-      "imagePath": path,
-      "quantity": quantity,
-      "condition": condition,
-      "status": "pending",
-      "createdAt": Timestamp.now(),
-      // Store guest info
-      "donorName": guestName,
-      "donorEmail": guestEmail,
-      "donorPhone": guestPhone,
-      "isGuest": true,
-    });
+      // Submit donation with guest info
+      await FirebaseFirestore.instance.collection("donations").add({
+        "userId": guestUserId, // Use fixed guest user ID
+        "itemName": itemCtrl.text.trim(),
+        "type": type,
+        "description": descCtrl.text.trim(),
+        "imagePath": path,
+        "quantity": quantity,
+        "condition": condition,
+        "status": "pending",
+        "createdAt": Timestamp.now(),
+        // Store guest info
+        "donorName": guestName,
+        "donorEmail": guestEmail,
+        "donorPhone": guestPhone,
+        "isGuest": true,
+      });
 
-    setState(() => submitting = false);
+      setState(() => submitting = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Donation submitted successfully!"),
-        backgroundColor: Colors.green,
-      ),
-    );
+      if (!mounted) return;
 
-    Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Donation submitted successfully!"),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      Navigator.pop(context);
+    } catch (e) {
+      setState(() => submitting = false);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error submitting donation: ${e.toString()}"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   @override
@@ -164,7 +196,7 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
 
               // Image Picker
               const Text(
-                "Equipment Photo",
+                "Equipment Photo *",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
@@ -207,7 +239,7 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
               TextFormField(
                 controller: itemCtrl,
                 decoration: const InputDecoration(
-                  labelText: "Item Name",
+                  labelText: "Item Name *",
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.medical_services),
                 ),
@@ -220,7 +252,7 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
               // Type Dropdown
               DropdownButtonFormField(
                 decoration: const InputDecoration(
-                  labelText: "Type",
+                  labelText: "Type *",
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.category),
                 ),
@@ -252,7 +284,7 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
               // Condition Dropdown
               DropdownButtonFormField(
                 decoration: const InputDecoration(
-                  labelText: "Condition",
+                  labelText: "Condition *",
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.star),
                 ),
@@ -272,7 +304,7 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
               // Quantity
               Row(
                 children: [
-                  const Text("Quantity",
+                  const Text("Quantity *",
                       style:
                           TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
                   const Spacer(),
@@ -312,7 +344,7 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
               TextFormField(
                 controller: descCtrl,
                 decoration: const InputDecoration(
-                  labelText: "Description",
+                  labelText: "Description *",
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.description),
                   alignLabelWithHint: true,
