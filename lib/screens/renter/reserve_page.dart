@@ -32,18 +32,40 @@ class _ReservePageState extends State<ReservePage> {
   Future<void> _checkCurrentAvailability() async {
     setState(() => checkingAvailability = true);
 
-    final snapshot = await FirebaseFirestore.instance
-        .collection("equipment")
-        .doc(widget.eq.id)
-        .get();
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection("equipment")
+          .doc(widget.eq.id)
+          .get();
 
-    if (snapshot.exists) {
-      final qty = snapshot.data()?["quantity"] ?? 0;
+      if (snapshot.exists) {
+        final qty = snapshot.data()?["quantity"] ?? 0;
+        setState(() {
+          availableQuantity = qty;
+          isAvailable = qty > 0;
+          checkingAvailability = false;
+        });
+      } else {
+        setState(() {
+          checkingAvailability = false;
+          isAvailable = false;
+        });
+      }
+    } catch (e) {
+      debugPrint("Error checking availability: $e");
       setState(() {
-        availableQuantity = qty;
-        isAvailable = qty > 0;
         checkingAvailability = false;
+        isAvailable = false;
       });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error checking availability: ${e.toString()}"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -108,28 +130,43 @@ class _ReservePageState extends State<ReservePage> {
   Future<bool> _checkDateAvailability() async {
     if (startDate == null || endDate == null) return false;
 
-    // Query overlapping reservations
-    final snapshot = await FirebaseFirestore.instance
-        .collection("reservations")
-        .where("equipmentId", isEqualTo: widget.eq.id)
-        .where("status", isEqualTo: "approved")
-        .get();
+    try {
+      // Query overlapping reservations - FIXED: Removed order by to avoid permission issues
+      final snapshot = await FirebaseFirestore.instance
+          .collection("reservations")
+          .where("equipmentId", isEqualTo: widget.eq.id)
+          .where("status", isEqualTo: "approved")
+          .get();
 
-    int reservedCount = 0;
+      int reservedCount = 0;
 
-    for (var doc in snapshot.docs) {
-      final data = doc.data();
-      final resStart = (data["startDate"] as Timestamp).toDate();
-      final resEnd = (data["endDate"] as Timestamp).toDate();
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final resStart = (data["startDate"] as Timestamp).toDate();
+        final resEnd = (data["endDate"] as Timestamp).toDate();
 
-      // Check if dates overlap
-      if (!(endDate!.isBefore(resStart) || startDate!.isAfter(resEnd))) {
-        reservedCount++;
+        // Check if dates overlap
+        if (!(endDate!.isBefore(resStart) || startDate!.isAfter(resEnd))) {
+          reservedCount++;
+        }
       }
-    }
 
-    // Check if equipment is available
-    return (availableQuantity - reservedCount) > 0;
+      // Check if equipment is available
+      return (availableQuantity - reservedCount) > 0;
+    } catch (e) {
+      debugPrint("Error checking date availability: $e");
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error checking availability: ${e.toString()}"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      
+      return false;
+    }
   }
 
   Future<void> submitReservation() async {
@@ -149,48 +186,65 @@ class _ReservePageState extends State<ReservePage> {
 
     setState(() => loading = true);
 
-    // Check availability for selected dates
-    final available = await _checkDateAvailability();
+    try {
+      // Check availability for selected dates
+      final available = await _checkDateAvailability();
 
-    if (!available) {
+      if (!available) {
+        setState(() => loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Equipment not available for selected dates"),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+
+      // Save reservation
+      await FirebaseFirestore.instance.collection("reservations").add({
+        "equipmentId": widget.eq.id,
+        "equipmentName": widget.eq.name,
+        "equipmentType": widget.eq.type,
+        "userId": uid,
+        "startDate": Timestamp.fromDate(startDate!),
+        "endDate": Timestamp.fromDate(endDate!),
+        "status": "pending",
+        "rentalDays": rentalDays,
+        "totalCost": totalCost,
+        "pricePerDay": widget.eq.pricePerDay,
+        "createdAt": Timestamp.now(),
+        "lifecycleStatus": "Reserved",
+      });
+
       setState(() => loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Equipment not available for selected dates"),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Reservation submitted successfully!"),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      setState(() => loading = false);
+      
+      debugPrint("Error submitting reservation: $e");
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error: ${e.toString()}"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
-
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-
-    // Save reservation
-    await FirebaseFirestore.instance.collection("reservations").add({
-      "equipmentId": widget.eq.id,
-      "equipmentName": widget.eq.name,
-      "equipmentType": widget.eq.type,
-      "userId": uid,
-      "startDate": Timestamp.fromDate(startDate!),
-      "endDate": Timestamp.fromDate(endDate!),
-      "status": "pending",
-      "rentalDays": rentalDays,
-      "totalCost": totalCost,
-      "pricePerDay": widget.eq.pricePerDay,
-      "createdAt": Timestamp.now(),
-      "lifecycleStatus": "Reserved", // Reserved → Checked Out → Returned → Maintenance
-    });
-
-    setState(() => loading = false);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Reservation submitted successfully!"),
-        backgroundColor: Colors.green,
-      ),
-    );
-
-    Navigator.pop(context);
   }
 
   @override
