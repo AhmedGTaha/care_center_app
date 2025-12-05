@@ -135,7 +135,7 @@ class _EquipmentDetailsState extends State<EquipmentDetails> {
 
             const SizedBox(height: 10),
 
-            // Type
+            // Type Badge
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -153,7 +153,35 @@ class _EquipmentDetailsState extends State<EquipmentDetails> {
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 15),
+
+            // NEW: Tags Display
+            if (widget.eq.tags.isNotEmpty)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Tags",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: widget.eq.tags.map((tag) {
+                      return Chip(
+                        label: Text(tag),
+                        backgroundColor: Colors.blue.shade50,
+                        avatar: const Icon(Icons.label, size: 16),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 15),
+                ],
+              ),
 
             // Description
             const Text(
@@ -165,7 +193,9 @@ class _EquipmentDetailsState extends State<EquipmentDetails> {
             ),
             const SizedBox(height: 8),
             Text(
-              widget.eq.description,
+              widget.eq.description.isEmpty
+                  ? "No description available"
+                  : widget.eq.description,
               style: const TextStyle(fontSize: 16, height: 1.5),
             ),
 
@@ -190,6 +220,15 @@ class _EquipmentDetailsState extends State<EquipmentDetails> {
                       "${widget.eq.quantity}",
                     ),
                     const Divider(),
+                    // NEW: Location Display
+                    if (widget.eq.location.isNotEmpty) ...[
+                      _detailRow(
+                        Icons.location_on,
+                        "Location",
+                        widget.eq.location,
+                      ),
+                      const Divider(),
+                    ],
                     _detailRow(
                       Icons.payments,
                       "Price Per Day",

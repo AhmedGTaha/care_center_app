@@ -8,6 +8,8 @@ class Equipment {
   int quantity;
   String status;
   double pricePerDay;
+  String location; // NEW: Physical location of equipment
+  List<String> tags; // NEW: Tags for categorization
 
   Equipment({
     required this.id,
@@ -19,6 +21,8 @@ class Equipment {
     required this.quantity,
     required this.status,
     required this.pricePerDay,
+    this.location = "",
+    this.tags = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -32,6 +36,8 @@ class Equipment {
       "quantity": quantity,
       "status": status,
       "pricePerDay": pricePerDay,
+      "location": location,
+      "tags": tags,
     };
   }
 
@@ -48,6 +54,8 @@ class Equipment {
       pricePerDay: (map["pricePerDay"] is int)
           ? (map["pricePerDay"] as int).toDouble()
           : double.tryParse(map["pricePerDay"].toString()) ?? 0.0,
+      location: map["location"] ?? "",
+      tags: map["tags"] != null ? List<String>.from(map["tags"]) : [],
     );
   }
 }

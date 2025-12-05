@@ -18,6 +18,7 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
   String searchQuery = "";
   String selectedType = "All";
   String selectedStatus = "All";
+  String selectedLocation = "All"; // NEW
   bool showAvailableOnly = false;
 
   List<String> equipmentTypes = [
@@ -44,6 +45,17 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
 
   bool missing(String p) => p.isEmpty || !File(p).existsSync();
 
+  // NEW: Get unique locations from equipment
+  List<String> getLocations(List<Equipment> items) {
+    final locations = items
+        .map((eq) => eq.location)
+        .where((loc) => loc.isNotEmpty)
+        .toSet()
+        .toList();
+    locations.sort();
+    return ["All", ...locations];
+  }
+
   List<Equipment> _applyFilters(List<Equipment> items) {
     return items.where((eq) {
       // Search filter
@@ -51,7 +63,9 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
         final query = searchQuery.toLowerCase();
         if (!eq.name.toLowerCase().contains(query) &&
             !eq.type.toLowerCase().contains(query) &&
-            !eq.description.toLowerCase().contains(query)) {
+            !eq.description.toLowerCase().contains(query) &&
+            !eq.location.toLowerCase().contains(query) &&
+            !eq.tags.any((tag) => tag.toLowerCase().contains(query))) {
           return false;
         }
       }
@@ -63,6 +77,11 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
 
       // Status filter
       if (selectedStatus != "All" && eq.status != selectedStatus) {
+        return false;
+      }
+
+      // NEW: Location filter
+      if (selectedLocation != "All" && eq.location != selectedLocation) {
         return false;
       }
 
@@ -80,6 +99,7 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
       searchQuery = "";
       selectedType = "All";
       selectedStatus = "All";
+      selectedLocation = "All";
       showAvailableOnly = false;
       searchCtrl.clear();
     });
@@ -140,7 +160,7 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
             child: TextField(
               controller: searchCtrl,
               decoration: InputDecoration(
-                hintText: "Search equipment...",
+                hintText: "Search by name, type, location, or tags...",
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: searchQuery.isNotEmpty
                     ? IconButton(
@@ -164,99 +184,134 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
           ),
 
           // Filters Section
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            color: Colors.grey.shade100,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+          StreamBuilder<List<Equipment>>(
+            stream: service.getEquipmentStream(),
+            builder: (context, snapshot) {
+              final allItems = snapshot.data ?? [];
+              final locations = getLocations(allItems);
+
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                color: Colors.grey.shade100,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.filter_list, size: 20),
-                    const SizedBox(width: 8),
-                    const Text(
-                      "Filters",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        const Icon(Icons.filter_list, size: 20),
+                        const SizedBox(width: 8),
+                        const Text(
+                          "Filters",
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: _resetFilters,
+                          icon: const Icon(Icons.refresh, size: 18),
+                          label: const Text("Reset"),
+                        ),
+                      ],
                     ),
-                    const Spacer(),
-                    TextButton.icon(
-                      onPressed: _resetFilters,
-                      icon: const Icon(Icons.refresh, size: 18),
-                      label: const Text("Reset"),
+                    const SizedBox(height: 8),
+
+                    // Type Dropdown
+                    Row(
+                      children: [
+                        const Text("Type: "),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButton<String>(
+                            value: selectedType,
+                            isExpanded: true,
+                            items: equipmentTypes
+                                .map((type) => DropdownMenuItem(
+                                      value: type,
+                                      child: Text(type),
+                                    ))
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() => selectedType = value!);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Status Dropdown
+                    Row(
+                      children: [
+                        const Text("Status: "),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButton<String>(
+                            value: selectedStatus,
+                            isExpanded: true,
+                            items: statusOptions
+                                .map((status) => DropdownMenuItem(
+                                      value: status,
+                                      child: Text(
+                                        status == "All"
+                                            ? "All"
+                                            : status[0].toUpperCase() +
+                                                status.substring(1),
+                                      ),
+                                    ))
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() => selectedStatus = value!);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // NEW: Location Dropdown
+                    Row(
+                      children: [
+                        const Text("Location: "),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButton<String>(
+                            value: locations.contains(selectedLocation)
+                                ? selectedLocation
+                                : "All",
+                            isExpanded: true,
+                            items: locations
+                                .map((location) => DropdownMenuItem(
+                                      value: location,
+                                      child: Text(location),
+                                    ))
+                                .toList(),
+                            onChanged: (value) {
+                              setState(() => selectedLocation = value!);
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // Toggle Filters
+                    FilterChip(
+                      label: const Text("Available Only"),
+                      selected: showAvailableOnly,
+                      onSelected: (value) {
+                        setState(() => showAvailableOnly = value);
+                      },
+                      selectedColor: Colors.green.shade100,
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-
-                // Type Dropdown
-                Row(
-                  children: [
-                    const Text("Type: "),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: DropdownButton<String>(
-                        value: selectedType,
-                        isExpanded: true,
-                        items: equipmentTypes
-                            .map((type) => DropdownMenuItem(
-                                  value: type,
-                                  child: Text(type),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() => selectedType = value!);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 8),
-
-                // Status Dropdown
-                Row(
-                  children: [
-                    const Text("Status: "),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: DropdownButton<String>(
-                        value: selectedStatus,
-                        isExpanded: true,
-                        items: statusOptions
-                            .map((status) => DropdownMenuItem(
-                                  value: status,
-                                  child: Text(
-                                    status == "All"
-                                        ? "All"
-                                        : status[0].toUpperCase() +
-                                            status.substring(1),
-                                  ),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() => selectedStatus = value!);
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 8),
-
-                // Toggle Filters
-                FilterChip(
-                  label: const Text("Available Only"),
-                  selected: showAvailableOnly,
-                  onSelected: (value) {
-                    setState(() => showAvailableOnly = value);
-                  },
-                  selectedColor: Colors.green.shade100,
-                ),
-              ],
-            ),
+              );
+            },
           ),
 
           // Equipment List
@@ -326,10 +381,32 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text("Type: ${eq.type}"),
+                            if (eq.location.isNotEmpty)
+                              Text(
+                                "📍 ${eq.location}",
+                                style: const TextStyle(fontSize: 12),
+                              ),
                             Text(
                               "Stock: ${eq.quantity} | Price: BD ${eq.pricePerDay.toStringAsFixed(2)}/day",
                               style: const TextStyle(fontSize: 12),
                             ),
+                            if (eq.tags.isNotEmpty)
+                              Wrap(
+                                spacing: 4,
+                                children: eq.tags.take(3).map((tag) {
+                                  return Chip(
+                                    label: Text(
+                                      tag,
+                                      style: const TextStyle(fontSize: 10),
+                                    ),
+                                    backgroundColor: Colors.blue.shade50,
+                                    padding: EdgeInsets.zero,
+                                    materialTapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                    visualDensity: VisualDensity.compact,
+                                  );
+                                }).toList(),
+                              ),
                           ],
                         ),
                         trailing: Row(

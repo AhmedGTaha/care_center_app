@@ -27,6 +27,8 @@ class _EquipmentFormState extends State<EquipmentForm> {
   final nameCtrl = TextEditingController();
   final descCtrl = TextEditingController();
   final priceCtrl = TextEditingController();
+  final locationCtrl = TextEditingController(); // NEW
+  final tagCtrl = TextEditingController(); // NEW
 
   String? selectedType;
   String? selectedCondition;
@@ -36,6 +38,8 @@ class _EquipmentFormState extends State<EquipmentForm> {
 
   File? selectedImage;
   String oldImagePath = "";
+
+  List<String> tags = []; // NEW: List of tags
 
   final service = EquipmentService();
 
@@ -63,10 +67,12 @@ class _EquipmentFormState extends State<EquipmentForm> {
       nameCtrl.text = eq.name;
       descCtrl.text = eq.description;
       priceCtrl.text = eq.pricePerDay.toString();
+      locationCtrl.text = eq.location; // NEW
       quantity = eq.quantity;
       selectedType = eq.type;
       selectedCondition = eq.condition;
       oldImagePath = eq.imagePath;
+      tags = List.from(eq.tags); // NEW
     }
   }
 
@@ -81,6 +87,24 @@ class _EquipmentFormState extends State<EquipmentForm> {
     );
 
     setState(() => selectedImage = File(compressed?.path ?? picked.path));
+  }
+
+  // NEW: Add tag
+  void addTag() {
+    final tag = tagCtrl.text.trim();
+    if (tag.isNotEmpty && !tags.contains(tag)) {
+      setState(() {
+        tags.add(tag);
+        tagCtrl.clear();
+      });
+    }
+  }
+
+  // NEW: Remove tag
+  void removeTag(String tag) {
+    setState(() {
+      tags.remove(tag);
+    });
   }
 
   @override
@@ -99,46 +123,87 @@ class _EquipmentFormState extends State<EquipmentForm> {
             child: Form(
               key: _formKey,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Name
                   TextFormField(
                     controller: nameCtrl,
-                    decoration: const InputDecoration(labelText: "Name"),
+                    decoration: const InputDecoration(
+                      labelText: "Name *",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.medical_services),
+                    ),
                     validator: (v) => v!.isEmpty ? "Required" : null,
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 15),
 
+                  // Type
                   DropdownButtonFormField<String>(
-                    initialValue: selectedType,
+                    value: selectedType,
+                    decoration: const InputDecoration(
+                      labelText: "Type *",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.category),
+                    ),
                     items: types
                         .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                         .toList(),
                     onChanged: (v) => setState(() => selectedType = v),
                     validator: (v) => v == null ? "Required" : null,
-                    decoration: const InputDecoration(labelText: "Type"),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 15),
 
+                  // Description
                   TextFormField(
                     controller: descCtrl,
                     maxLines: 3,
-                    decoration: const InputDecoration(labelText: "Description"),
+                    decoration: const InputDecoration(
+                      labelText: "Description",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.description),
+                      alignLabelWithHint: true,
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 15),
 
+                  // Condition
                   DropdownButtonFormField<String>(
-                    initialValue: selectedCondition,
+                    value: selectedCondition,
+                    decoration: const InputDecoration(
+                      labelText: "Condition *",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.star),
+                    ),
                     items: conditions
                         .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                         .toList(),
                     onChanged: (v) => setState(() => selectedCondition = v),
                     validator: (v) => v == null ? "Required" : null,
-                    decoration: const InputDecoration(labelText: "Condition"),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 15),
 
+                  // NEW: Location Field
+                  TextFormField(
+                    controller: locationCtrl,
+                    decoration: const InputDecoration(
+                      labelText: "Location",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.location_on),
+                      hintText: "e.g., Room 201, Storage A",
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+
+                  // Quantity
                   Row(
                     children: [
-                      const Text("Quantity"),
+                      const Text(
+                        "Quantity *",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
                       const Spacer(),
                       IconButton(
                         icon: const Icon(Icons.remove_circle, color: Colors.red),
@@ -146,17 +211,34 @@ class _EquipmentFormState extends State<EquipmentForm> {
                             ? () => setState(() => quantity--)
                             : null,
                       ),
-                      Text("$quantity",
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue, width: 2),
+                        ),
+                        child: Text(
+                          "$quantity",
                           style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold)),
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ),
                       IconButton(
                         icon: const Icon(Icons.add_circle, color: Colors.green),
                         onPressed: () => setState(() => quantity++),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 15),
 
+                  // Price Per Day
                   TextFormField(
                     controller: priceCtrl,
                     keyboardType:
@@ -166,8 +248,12 @@ class _EquipmentFormState extends State<EquipmentForm> {
                         RegExp(r'^\d*\.?\d*$'),
                       ),
                     ],
-                    decoration:
-                        const InputDecoration(labelText: "Price Per Day"),
+                    decoration: const InputDecoration(
+                      labelText: "Price Per Day (BD) *",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.payments),
+                      hintText: "0.00 for free/donated items",
+                    ),
                     validator: (v) {
                       if (v == null || v.isEmpty) return "Required";
                       return double.tryParse(v) != null ? null : "Invalid";
@@ -175,66 +261,170 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   ),
                   const SizedBox(height: 20),
 
-                  GestureDetector(
-                    onTap: pickImage,
-                    child: Column(
-                      children: [
-                        CircleAvatar(
-                          radius: 55,
-                          backgroundImage: selectedImage != null
-                              ? FileImage(selectedImage!)
-                              : (oldImagePath.isNotEmpty &&
-                                      File(oldImagePath).existsSync()
-                                  ? FileImage(File(oldImagePath))
-                                  : const AssetImage(
-                                      "assets/default_equipment.png"))
-                                  as ImageProvider,
-                        ),
-                        const SizedBox(height: 10),
-                        Text(isEditing ? "Change Image" : "Select Image"),
-                      ],
+                  // NEW: Tags Section
+                  const Text(
+                    "Tags",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: tagCtrl,
+                          decoration: const InputDecoration(
+                            hintText: "Add tag (e.g., pediatric, portable)",
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.label),
+                          ),
+                          onFieldSubmitted: (_) => addTag(),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      ElevatedButton.icon(
+                        onPressed: addTag,
+                        icon: const Icon(Icons.add),
+                        label: const Text("Add"),
+                        style: ElevatedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Display Tags
+                  if (tags.isNotEmpty)
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: tags.map((tag) {
+                        return Chip(
+                          label: Text(tag),
+                          deleteIcon: const Icon(Icons.close, size: 18),
+                          onDeleted: () => removeTag(tag),
+                          backgroundColor: Colors.blue.shade50,
+                          deleteIconColor: Colors.blue,
+                        );
+                      }).toList(),
+                    ),
+
+                  const SizedBox(height: 20),
+
+                  // Image Selection
+                  const Text(
+                    "Equipment Image",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: pickImage,
+                    child: Container(
+                      height: 150,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade400),
+                      ),
+                      child: selectedImage != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.file(
+                                selectedImage!,
+                                fit: BoxFit.cover,
+                              ),
+                            )
+                          : (oldImagePath.isNotEmpty &&
+                                  File(oldImagePath).existsSync()
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Image.file(
+                                    File(oldImagePath),
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
+                              : Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.camera_alt,
+                                        size: 50, color: Colors.grey.shade600),
+                                    const SizedBox(height: 10),
+                                    Text(
+                                      isEditing ? "Change Image" : "Tap to add image",
+                                      style: TextStyle(color: Colors.grey.shade600),
+                                    ),
+                                  ],
+                                )),
+                    ),
+                  ),
+
                   const SizedBox(height: 25),
 
-                  ElevatedButton(
-                    onPressed: () async {
-                      if (!_formKey.currentState!.validate()) return;
+                  // Save Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        if (!_formKey.currentState!.validate()) return;
 
-                      setState(() => loading = true);
+                        setState(() => loading = true);
 
-                      String finalImage = oldImagePath;
-                      if (selectedImage != null) {
-                        finalImage =
-                            await service.saveLocalImage(selectedImage!);
-                      }
+                        String finalImage = oldImagePath;
+                        if (selectedImage != null) {
+                          finalImage =
+                              await service.saveLocalImage(selectedImage!);
+                        }
 
-                      final eq = Equipment(
-                        id: isEditing ? widget.equipment!.id : "",
-                        name: nameCtrl.text,
-                        type: selectedType!,
-                        description: descCtrl.text,
-                        imagePath: finalImage,
-                        condition: selectedCondition!,
-                        quantity: quantity,
-                        status: "available",
-                        pricePerDay: double.parse(priceCtrl.text),
-                      );
+                        final eq = Equipment(
+                          id: isEditing ? widget.equipment!.id : "",
+                          name: nameCtrl.text.trim(),
+                          type: selectedType!,
+                          description: descCtrl.text.trim(),
+                          imagePath: finalImage,
+                          condition: selectedCondition!,
+                          quantity: quantity,
+                          status: "available",
+                          pricePerDay: double.parse(priceCtrl.text),
+                          location: locationCtrl.text.trim(), // NEW
+                          tags: tags, // NEW
+                        );
 
-                      if (widget.isFromDonation) {
-                        await service.addEquipment(eq);
-                      } else if (isEditing) {
-                        await service.updateEquipment(eq, oldImagePath: oldImagePath);
-                      } else {
-                        await service.addEquipment(eq);
-                      }
+                        if (widget.isFromDonation) {
+                          await service.addEquipment(eq);
+                        } else if (isEditing) {
+                          await service.updateEquipment(eq,
+                              oldImagePath: oldImagePath);
+                        } else {
+                          await service.addEquipment(eq);
+                        }
 
-                      setState(() => loading = false);
-                      if (!mounted) return;
-                      Navigator.pop(context);
-                    },
-                    child:
-                        Text(isEditing ? "Update Equipment" : "Save Equipment"),
+                        setState(() => loading = false);
+                        if (!mounted) return;
+                        Navigator.pop(context);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.all(16),
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: Text(
+                        isEditing ? "Update Equipment" : "Save Equipment",
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -251,5 +441,15 @@ class _EquipmentFormState extends State<EquipmentForm> {
           ),
       ],
     );
+  }
+
+  @override
+  void dispose() {
+    nameCtrl.dispose();
+    descCtrl.dispose();
+    priceCtrl.dispose();
+    locationCtrl.dispose();
+    tagCtrl.dispose();
+    super.dispose();
   }
 }
