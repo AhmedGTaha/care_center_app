@@ -5,6 +5,9 @@ import '../../auth/login_screen.dart';
 import 'renter_equipment_list.dart';
 import '../reservations/renter_reservations_page.dart';
 import '../donations/donation_page.dart';
+import '../tracking/rental_tracking_page.dart';
+import '../tracking/notifications_page.dart';
+import '../../services/notification_service.dart';
 
 class RenterHome extends StatelessWidget {
   const RenterHome({super.key});
@@ -19,11 +22,63 @@ class RenterHome extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
+    final notificationService = NotificationService();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text("Renter Dashboard"),
         centerTitle: true,
         actions: [
+          // Notification bell with badge
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const NotificationsPage(),
+                    ),
+                  );
+                },
+              ),
+              StreamBuilder<int>(
+                stream: notificationService.getUnreadCount(uid),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData || snapshot.data == 0) {
+                    return const SizedBox();
+                  }
+
+                  return Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: const BoxDecoration(
+                        color: Colors.red,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 16,
+                        minHeight: 16,
+                      ),
+                      child: Text(
+                        '${snapshot.data}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () => logout(context),
@@ -52,9 +107,21 @@ class RenterHome extends StatelessWidget {
             ),
             _dashboardButton(
               context,
+              icon: Icons.track_changes,
+              label: "Rental Tracking",
+              page: const RentalTrackingPage(isAdmin: false),
+            ),
+            _dashboardButton(
+              context,
               icon: Icons.volunteer_activism,
               label: "Donate Items",
               page: const DonationPage(),
+            ),
+            _dashboardButton(
+              context,
+              icon: Icons.notifications_active,
+              label: "Notifications",
+              page: const NotificationsPage(),
             ),
             _dashboardButton(
               context,

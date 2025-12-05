@@ -20,7 +20,31 @@ class RenterReservationsPage extends StatelessWidget {
       body: StreamBuilder<List<Reservation>>(
         stream: reservationService.getUserReservations(uid),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          // Show loading indicator
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          // Show error if any
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 60, color: Colors.red),
+                  const SizedBox(height: 16),
+                  Text(
+                    "Error: ${snapshot.error}",
+                    style: const TextStyle(fontSize: 16),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            );
+          }
+
+          // Check if data exists
+          if (!snapshot.hasData || snapshot.data == null) {
             return const Center(child: CircularProgressIndicator());
           }
 

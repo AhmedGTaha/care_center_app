@@ -18,15 +18,23 @@ class ReservationService {
   }
 
   // Stream user reservations (for renter)
+  // REMOVED orderBy to avoid composite index requirement
   Stream<List<Reservation>> getUserReservations(String userId) {
     return db
         .collection("reservations")
         .where("userId", isEqualTo: userId)
-        .orderBy("createdAt", descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Reservation.fromMap(doc.data(), doc.id))
-            .toList());
+        .map((snapshot) {
+          // Sort in memory after fetching
+          final reservations = snapshot.docs
+              .map((doc) => Reservation.fromMap(doc.data(), doc.id))
+              .toList();
+          
+          // Sort by createdAt in descending order
+          reservations.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          
+          return reservations;
+        });
   }
 
   // Approve reservation

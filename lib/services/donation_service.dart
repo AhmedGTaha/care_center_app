@@ -1,31 +1,40 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/donation_model.dart';
+import 'notification_service.dart';
 
 class DonationService {
   final db = FirebaseFirestore.instance;
+  final notificationService = NotificationService();
 
   // Submit new donation
-Future<void> submitDonation({
-  required String userId,
-  required String itemName,
-  required String type,
-  required String description,
-  required String imagePath,
-  required int quantity,
-  required String condition,
-}) async {
-  await db.collection("donations").add({
-    "userId": userId,
-    "itemName": itemName,
-    "type": type,
-    "description": description,
-    "imagePath": imagePath,
-    "quantity": quantity,
-    "condition": condition,      // ⭐ save into Firestore
-    "status": "pending",
-    "createdAt": Timestamp.now(),
-  });
-}
+  Future<void> submitDonation({
+    required String userId,
+    required String itemName,
+    required String type,
+    required String description,
+    required String imagePath,
+    required int quantity,
+    required String condition,
+  }) async {
+    await db.collection("donations").add({
+      "userId": userId,
+      "itemName": itemName,
+      "type": type,
+      "description": description,
+      "imagePath": imagePath,
+      "quantity": quantity,
+      "condition": condition,
+      "status": "pending",
+      "createdAt": Timestamp.now(),
+    });
+
+    // Get donor name
+    final userDoc = await db.collection("users").doc(userId).get();
+    final donorName = userDoc.data()?["name"] ?? "A user";
+
+    // Notify admins about new donation
+    await notificationService.notifyAdminAboutDonation(donorName, itemName);
+  }
 
   // Stream for admin dashboard
   Stream<List<Donation>> getAllDonations() {
