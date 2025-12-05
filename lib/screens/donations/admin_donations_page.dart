@@ -104,9 +104,16 @@ class AdminDonationsPage extends StatelessWidget {
                       // ------------------------------
                       // IMAGE
                       // ------------------------------
-                      if (d.imagePath.isNotEmpty)
+                      if (d.imagePath.isNotEmpty && File(d.imagePath).existsSync())
                         Image.file(
                           File(d.imagePath),
+                          height: 130,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        )
+                      else
+                        Image.asset(
+                          'assets/default_equipment.png',  // Default placeholder
                           height: 130,
                           width: double.infinity,
                           fit: BoxFit.cover,
