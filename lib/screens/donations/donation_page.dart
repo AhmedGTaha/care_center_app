@@ -21,7 +21,7 @@ class _DonationPageState extends State<DonationPage> {
   final descCtrl = TextEditingController();
 
   String type = "Wheelchair";
-  String condition = "Good";     // ⭐ DEFAULT VALUE
+  String condition = "Good";
 
   int quantity = 1;
 
@@ -73,7 +73,7 @@ class _DonationPageState extends State<DonationPage> {
       description: descCtrl.text.trim(),
       imagePath: path,
       quantity: quantity,
-      condition: condition,   // ⭐ NEW FIELD
+      condition: condition,
     );
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -122,12 +122,12 @@ class _DonationPageState extends State<DonationPage> {
 
               DropdownButtonFormField(
                 decoration: const InputDecoration(labelText: "Type"),
-                initialValue: type,
+                value: type,
                 items: const [
                   DropdownMenuItem(value: "Wheelchair", child: Text("Wheelchair")),
                   DropdownMenuItem(value: "Walker", child: Text("Walker")),
                   DropdownMenuItem(value: "Crutches", child: Text("Crutches")),
-                  DropdownMenuItem(value: "Bed", child: Text("Hospital Bed")),
+                  DropdownMenuItem(value: "Hospital Bed", child: Text("Hospital Bed")),
                   DropdownMenuItem(value: "Oxygen Machine", child: Text("Oxygen Machine")),
                   DropdownMenuItem(value: "Medical Monitor", child: Text("Medical Monitor")),
                   DropdownMenuItem(value: "Mobility Scooter", child: Text("Mobility Scooter")),
@@ -140,10 +140,9 @@ class _DonationPageState extends State<DonationPage> {
 
               const SizedBox(height: 15),
 
-              // ⭐ NEW CONDITION DROPDOWN
               DropdownButtonFormField(
                 decoration: const InputDecoration(labelText: "Condition"),
-                initialValue: condition,
+                value: condition,
                 items: const [
                   DropdownMenuItem(value: "New", child: Text("New")),
                   DropdownMenuItem(value: "Like New", child: Text("Like New")),

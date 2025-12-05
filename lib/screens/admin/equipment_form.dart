@@ -9,7 +9,7 @@ import '../../services/equipment_service.dart';
 
 class EquipmentForm extends StatefulWidget {
   final Equipment? equipment;
-  final bool isFromDonation;   // ⭐ IMPORTANT FLAG
+  final bool isFromDonation;
 
   const EquipmentForm({
     super.key,
@@ -108,7 +108,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   const SizedBox(height: 12),
 
                   DropdownButtonFormField<String>(
-                    initialValue: selectedType,
+                    value: selectedType,
                     items: types
                         .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                         .toList(),
@@ -126,7 +126,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   const SizedBox(height: 12),
 
                   DropdownButtonFormField<String>(
-                    initialValue: selectedCondition,
+                    value: selectedCondition,
                     items: conditions
                         .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                         .toList(),
@@ -222,7 +222,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
                       );
 
                       if (widget.isFromDonation) {
-                        await service.addEquipment(eq);     // Always ADD for donations
+                        await service.addEquipment(eq);
                       } else if (isEditing) {
                         await service.updateEquipment(eq, oldImagePath: oldImagePath);
                       } else {
