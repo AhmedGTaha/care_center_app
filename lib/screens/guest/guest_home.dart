@@ -146,38 +146,6 @@ class GuestHome extends StatelessWidget {
                       );
                     },
                   ),
-
-                  // Locked: Reserve Equipment
-                  _lockedButton(
-                    context,
-                    icon: Icons.calendar_today,
-                    label: "Reserve Equipment",
-                    onTap: () => _showLoginRequiredDialog(context),
-                  ),
-
-                  // Locked: My Reservations
-                  _lockedButton(
-                    context,
-                    icon: Icons.history,
-                    label: "My Reservations",
-                    onTap: () => _showLoginRequiredDialog(context),
-                  ),
-
-                  // Locked: Rental Tracking
-                  _lockedButton(
-                    context,
-                    icon: Icons.track_changes,
-                    label: "Rental Tracking",
-                    onTap: () => _showLoginRequiredDialog(context),
-                  ),
-
-                  // Locked: Profile
-                  _lockedButton(
-                    context,
-                    icon: Icons.person,
-                    label: "My Profile",
-                    onTap: () => _showLoginRequiredDialog(context),
-                  ),
                 ],
               ),
             ),

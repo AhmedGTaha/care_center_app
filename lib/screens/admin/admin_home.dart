@@ -4,8 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../constants/app_theme.dart';
 import '../../widgets/dashboard_card.dart';
-import '../../widgets/info_card.dart';
-import '../../widgets/section_header.dart';
 import '../../widgets/slide_in_animation.dart';
 import '../../auth/login_screen.dart';
 import 'admin_equipment_list.dart';
@@ -72,7 +70,7 @@ class _EnhancedAdminHomeState extends State<AdminHome> {
     if (!context.mounted) return;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const EnhancedLoginScreen()),
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
     );
   }
 
@@ -146,83 +144,6 @@ class _EnhancedAdminHomeState extends State<AdminHome> {
                       ),
 
                       const SizedBox(height: 24),
-
-                      // Statistics Cards
-                      SizedBox(
-                        height: 140,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
-                          children: [
-                            SlideInAnimation(
-                              delay: 100,
-                              child: SizedBox(
-                                width: 160,
-                                child: InfoCard(
-                                  title: "Equipment",
-                                  value: totalEquipment.toString(),
-                                  icon: Icons.inventory_2,
-                                  color: AppTheme.infoColor,
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const AdminEquipmentList(),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            SlideInAnimation(
-                              delay: 200,
-                              child: SizedBox(
-                                width: 160,
-                                child: InfoCard(
-                                  title: "Pending",
-                                  value: pendingReservations.toString(),
-                                  icon: Icons.pending_actions,
-                                  color: AppTheme.warningColor,
-                                  subtitle: "reservations",
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const AdminReservationsPage(),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            SlideInAnimation(
-                              delay: 300,
-                              child: SizedBox(
-                                width: 160,
-                                child: InfoCard(
-                                  title: "Donations",
-                                  value: pendingDonations.toString(),
-                                  icon: Icons.volunteer_activism,
-                                  color: AppTheme.successColor,
-                                  subtitle: "pending",
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => AdminDonationsPage(),
-                                      ),
-                                    );
-                                  },
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
 
                       // Section Header
                       SlideInAnimation(

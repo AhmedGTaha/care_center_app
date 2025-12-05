@@ -1,11 +1,9 @@
-// lib/screens/renter/enhanced_renter_home.dart
+// lib/screens/renter/renter_home.dart - FIXED VERSION
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../constants/app_theme.dart';
 import '../../widgets/dashboard_card.dart';
-import '../../widgets/info_card.dart';
-import '../../widgets/section_header.dart';
 import '../../widgets/slide_in_animation.dart';
 import '../../services/notification_service.dart';
 import '../../auth/login_screen.dart';
@@ -20,10 +18,10 @@ class RenterHome extends StatefulWidget {
   const RenterHome({super.key});
 
   @override
-  State<RenterHome> createState() => _EnhancedRenterHomeState();
+  State<RenterHome> createState() => _RenterHomeState();
 }
 
-class _EnhancedRenterHomeState extends State<RenterHome> {
+class _RenterHomeState extends State<RenterHome> {
   final notificationService = NotificationService();
   String renterName = "User";
   int myReservations = 0;
@@ -72,7 +70,7 @@ class _EnhancedRenterHomeState extends State<RenterHome> {
     if (!context.mounted) return;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const EnhancedLoginScreen()),
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
     );
   }
 
@@ -215,70 +213,38 @@ class _EnhancedRenterHomeState extends State<RenterHome> {
 
                       const SizedBox(height: 24),
 
-                      // Statistics Cards
-                      SizedBox(
-                        height: 140,
-                        child: ListView(
-                          scrollDirection: Axis.horizontal,
+                      // Section Header
+                      SlideInAnimation(
+                        delay: 200,
+                        child: Row(
                           children: [
-                            SlideInAnimation(
-                              delay: 100,
-                              child: SizedBox(
-                                width: 160,
-                                child: InfoCard(
-                                  title: "Total",
-                                  value: myReservations.toString(),
-                                  icon: Icons.history,
-                                  color: AppTheme.infoColor,
-                                  subtitle: "reservations",
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) =>
-                                            const RenterReservationsPage(),
-                                      ),
-                                    );
-                                  },
-                                ),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                gradient: AppTheme.primaryGradient,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.apps,
+                                color: Colors.white,
+                                size: 20,
                               ),
                             ),
                             const SizedBox(width: 12),
-                            SlideInAnimation(
-                              delay: 200,
-                              child: SizedBox(
-                                width: 160,
-                                child: InfoCard(
-                                  title: "Active",
-                                  value: activeRentals.toString(),
-                                  icon: Icons.check_circle,
-                                  color: AppTheme.successColor,
-                                  subtitle: "rentals",
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const RentalTrackingPage(
-                                            isAdmin: false),
-                                      ),
-                                    );
-                                  },
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Quick Actions",
+                                  style: AppTheme.headingSmall,
                                 ),
-                              ),
+                                Text(
+                                  "Rent, donate, and track equipment",
+                                  style: AppTheme.bodySmall,
+                                ),
+                              ],
                             ),
                           ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Section Header
-                      SlideInAnimation(
-                        delay: 300,
-                        child: const SectionHeader(
-                          title: "Quick Actions",
-                          subtitle: "Rent, donate, and track equipment",
-                          icon: Icons.apps,
                         ),
                       ),
                     ],
@@ -392,6 +358,67 @@ class _EnhancedRenterHomeState extends State<RenterHome> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+    String subtitle,
+  ) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            color,
+            color.withOpacity(0.8),
+          ],
+        ),
+        borderRadius: AppTheme.borderRadiusLarge,
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: Colors.white, size: 28),
+          const Spacer(),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            subtitle,
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.8),
+              fontSize: 10,
+            ),
+          ),
+        ],
       ),
     );
   }

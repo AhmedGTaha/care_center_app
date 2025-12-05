@@ -1,8 +1,6 @@
-// lib/auth/enhanced_login_screen.dart
+// lib/auth/login_screen.dart - COMPLETE VERSION
 import 'package:flutter/material.dart';
 import '../constants/app_theme.dart';
-import '../widgets/animated_button.dart';
-import '../widgets/slide_in_animation.dart';
 import 'auth_service.dart';
 import '../screens/admin/admin_home.dart';
 import '../screens/renter/renter_home.dart';
@@ -24,8 +22,6 @@ class _EnhancedLoginScreenState extends State<LoginScreen>
   bool loading = false;
   bool _obscurePassword = true;
   late AnimationController _animationController;
-  late Animation<double> _fadeAnimation;
-  late Animation<Offset> _slideAnimation;
 
   @override
   void initState() {
@@ -34,24 +30,6 @@ class _EnhancedLoginScreenState extends State<LoginScreen>
       duration: const Duration(milliseconds: 1200),
       vsync: this,
     );
-
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
-      ),
-    );
-
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.3),
-      end: Offset.zero,
-    ).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: const Interval(0.2, 1.0, curve: Curves.easeOut),
-      ),
-    );
-
     _animationController.forward();
   }
 
@@ -86,12 +64,12 @@ class _EnhancedLoginScreenState extends State<LoginScreen>
     if (role == "admin") {
       Navigator.pushReplacement(
         context,
-        _createRoute(const AdminHome()),
+        MaterialPageRoute(builder: (_) => const AdminHome()),
       );
     } else {
       Navigator.pushReplacement(
         context,
-        _createRoute(const RenterHome()),
+        MaterialPageRoute(builder: (_) => const RenterHome()),
       );
     }
   }
@@ -99,7 +77,7 @@ class _EnhancedLoginScreenState extends State<LoginScreen>
   void _continueAsGuest() {
     Navigator.pushReplacement(
       context,
-      _createRoute(const GuestHome()),
+      MaterialPageRoute(builder: (_) => const GuestHome()),
     );
   }
 
@@ -126,23 +104,6 @@ class _EnhancedLoginScreenState extends State<LoginScreen>
     );
   }
 
-  Route _createRoute(Widget page) {
-    return PageRouteBuilder(
-      pageBuilder: (context, animation, secondaryAnimation) => page,
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        const begin = Offset(1.0, 0.0);
-        const end = Offset.zero;
-        const curve = Curves.easeInOut;
-        var tween = Tween(begin: begin, end: end).chain(
-          CurveTween(curve: curve),
-        );
-        var offsetAnimation = animation.drive(tween);
-        return SlideTransition(position: offsetAnimation, child: child);
-      },
-      transitionDuration: const Duration(milliseconds: 400),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -161,236 +122,256 @@ class _EnhancedLoginScreenState extends State<LoginScreen>
           child: Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(24),
-              child: FadeTransition(
-                opacity: _fadeAnimation,
-                child: SlideTransition(
-                  position: _slideAnimation,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      // App Logo
-                      SlideInAnimation(
-                        delay: 0,
-                        child: Hero(
-                          tag: 'app_logo',
-                          child: Container(
-                            width: 100,
-                            height: 100,
-                            decoration: BoxDecoration(
-                              gradient: AppTheme.primaryGradient,
-                              shape: BoxShape.circle,
-                              boxShadow: AppTheme.elevatedShadow,
-                            ),
-                            child: const Icon(
-                              Icons.medical_services,
-                              size: 50,
-                              color: Colors.white,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // App Logo
+                  Hero(
+                    tag: 'app_logo',
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      decoration: BoxDecoration(
+                        gradient: AppTheme.primaryGradient,
+                        shape: BoxShape.circle,
+                        boxShadow: AppTheme.elevatedShadow,
+                      ),
+                      child: const Icon(
+                        Icons.medical_services,
+                        size: 50,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // App Title
+                  ShaderMask(
+                    shaderCallback: (bounds) =>
+                        AppTheme.primaryGradient.createShader(bounds),
+                    child: const Text(
+                      "Care Center",
+                      style: TextStyle(
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  Text(
+                    "Welcome Back",
+                    style: AppTheme.bodyLarge.copyWith(
+                      color: AppTheme.textSecondary,
+                    ),
+                  ),
+
+                  const SizedBox(height: 48),
+
+                  // Login Form
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: AppTheme.borderRadiusLarge,
+                      boxShadow: AppTheme.cardShadow,
+                    ),
+                    child: Column(
+                      children: [
+                        // Email Field
+                        TextField(
+                          controller: emailCtrl,
+                          keyboardType: TextInputType.emailAddress,
+                          decoration: InputDecoration(
+                            labelText: "Email",
+                            hintText: "Enter your email",
+                            prefixIcon: const Icon(Icons.email_outlined),
+                            border: OutlineInputBorder(
+                              borderRadius: AppTheme.borderRadiusMedium,
                             ),
                           ),
                         ),
-                      ),
 
-                      const SizedBox(height: 32),
+                        const SizedBox(height: 20),
 
-                      // App Title
-                      SlideInAnimation(
-                        delay: 100,
-                        child: ShaderMask(
-                          shaderCallback: (bounds) =>
-                              AppTheme.primaryGradient.createShader(bounds),
-                          child: const Text(
-                            "Care Center",
-                            style: TextStyle(
-                              fontSize: 36,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      SlideInAnimation(
-                        delay: 200,
-                        child: Text(
-                          "Welcome Back",
-                          style: AppTheme.bodyLarge.copyWith(
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 48),
-
-                      // Login Form
-                      SlideInAnimation(
-                        delay: 300,
-                        child: Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: AppTheme.borderRadiusLarge,
-                            boxShadow: AppTheme.cardShadow,
-                          ),
-                          child: Column(
-                            children: [
-                              // Email Field
-                              TextField(
-                                controller: emailCtrl,
-                                keyboardType: TextInputType.emailAddress,
-                                decoration: InputDecoration(
-                                  labelText: "Email",
-                                  hintText: "Enter your email",
-                                  prefixIcon: const Icon(Icons.email_outlined),
-                                  border: OutlineInputBorder(
-                                    borderRadius: AppTheme.borderRadiusMedium,
-                                  ),
-                                ),
+                        // Password Field
+                        TextField(
+                          controller: passCtrl,
+                          obscureText: _obscurePassword,
+                          decoration: InputDecoration(
+                            labelText: "Password",
+                            hintText: "Enter your password",
+                            prefixIcon: const Icon(Icons.lock_outline),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
                               ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: AppTheme.borderRadiusMedium,
+                            ),
+                          ),
+                        ),
 
-                              const SizedBox(height: 20),
+                        const SizedBox(height: 32),
 
-                              // Password Field
-                              TextField(
-                                controller: passCtrl,
-                                obscureText: _obscurePassword,
-                                decoration: InputDecoration(
-                                  labelText: "Password",
-                                  hintText: "Enter your password",
-                                  prefixIcon: const Icon(Icons.lock_outline),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscurePassword
-                                          ? Icons.visibility_outlined
-                                          : Icons.visibility_off_outlined,
+                        // Login Button
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: loading ? null : _login,
+                            style: ElevatedButton.styleFrom(
+                              padding: const EdgeInsets.all(16),
+                            ),
+                            child: loading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
                                     ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _obscurePassword = !_obscurePassword;
-                                      });
-                                    },
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(Icons.login),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        "Login",
+                                        style: AppTheme.buttonText,
+                                      ),
+                                    ],
                                   ),
-                                  border: OutlineInputBorder(
-                                    borderRadius: AppTheme.borderRadiusMedium,
-                                  ),
-                                ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Register Link
+                        TextButton(
+                          onPressed: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const RegisterScreen(),
                               ),
+                            );
+                          },
+                          child: Text(
+                            "Don't have an account? Register",
+                            style: AppTheme.bodyMedium.copyWith(
+                              color: AppTheme.primaryColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
-                              const SizedBox(height: 32),
+                  const SizedBox(height: 32),
 
-                              // Login Button
-                              AnimatedButton(
-                                text: "Login",
-                                icon: Icons.login,
-                                onPressed: loading ? null : _login,
-                                isLoading: loading,
-                              ),
-
-                              const SizedBox(height: 16),
-
-                              // Register Link
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pushReplacement(
-                                    context,
-                                    _createRoute(const RegisterScreen()),
-                                  );
-                                },
-                                child: Text(
-                                  "Don't have an account? Register",
-                                  style: AppTheme.bodyMedium.copyWith(
-                                    color: AppTheme.primaryColor,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                              ),
-                            ],
+                  // Divider
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Divider(
+                          color: AppTheme.textLight.withOpacity(0.5),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          "OR",
+                          style: AppTheme.bodySmall.copyWith(
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
-
-                      const SizedBox(height: 32),
-
-                      // Divider
-                      SlideInAnimation(
-                        delay: 400,
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Divider(
-                                color: AppTheme.textLight.withOpacity(0.5),
-                              ),
-                            ),
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              child: Text(
-                                "OR",
-                                style: AppTheme.bodySmall.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              child: Divider(
-                                color: AppTheme.textLight.withOpacity(0.5),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Guest Button
-                      SlideInAnimation(
-                        delay: 500,
-                        child: AnimatedButton(
-                          text: "Continue as Guest",
-                          icon: Icons.person_outline,
-                          onPressed: _continueAsGuest,
-                          backgroundColor: Colors.white,
-                          foregroundColor: AppTheme.accentColor,
-                        ),
-                      ),
-
-                      const SizedBox(height: 16),
-
-                      // Guest Info
-                      SlideInAnimation(
-                        delay: 600,
-                        child: Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppTheme.accentColor.withOpacity(0.1),
-                            borderRadius: AppTheme.borderRadiusMedium,
-                            border: Border.all(
-                              color: AppTheme.accentColor.withOpacity(0.3),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.info_outline,
-                                color: AppTheme.accentColor,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  "Guest mode: Browse equipment and donate items",
-                                  style: AppTheme.bodySmall.copyWith(
-                                    color: AppTheme.accentColor,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
+                      Expanded(
+                        child: Divider(
+                          color: AppTheme.textLight.withOpacity(0.5),
                         ),
                       ),
                     ],
                   ),
-                ),
+
+                  const SizedBox(height: 32),
+
+                  // Guest Button
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton(
+                      onPressed: _continueAsGuest,
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.all(16),
+                        side: BorderSide(
+                          color: AppTheme.accentColor,
+                          width: 2,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.person_outline,
+                            color: AppTheme.accentColor,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            "Continue as Guest",
+                            style: AppTheme.buttonText.copyWith(
+                              color: AppTheme.accentColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Guest Info
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentColor.withOpacity(0.1),
+                      borderRadius: AppTheme.borderRadiusMedium,
+                      border: Border.all(
+                        color: AppTheme.accentColor.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: AppTheme.accentColor,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            "Guest mode: Browse equipment and donate items",
+                            style: AppTheme.bodySmall.copyWith(
+                              color: AppTheme.accentColor,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

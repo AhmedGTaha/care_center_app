@@ -1,10 +1,4 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:path_provider/path_provider.dart';
-
 import 'auth_service.dart';
 import 'login_screen.dart';
 
@@ -17,7 +11,6 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-
   final nameCtrl = TextEditingController();
   final emailCtrl = TextEditingController();
   final passCtrl = TextEditingController();
@@ -25,57 +18,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   String role = "renter";
   bool loading = false;
-  File? avatarImage;
 
   final auth = AuthService();
 
-  // ----------------------------------------------------------
-  // PICK AVATAR
-  // ----------------------------------------------------------
-  Future<void> pickAvatar() async {
-    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-
-    if (picked != null) {
-      setState(() => avatarImage = File(picked.path));
-    }
-  }
-
-  // ----------------------------------------------------------
-  // COMPRESS + SAVE LOCALLY
-  // ----------------------------------------------------------
-  Future<String> saveAvatarLocal(File file) async {
-    final dir = await getApplicationDocumentsDirectory();
-    final avatarDir = Directory("${dir.path}/avatars");
-
-    if (!avatarDir.existsSync()) {
-      avatarDir.createSync(recursive: true);
-    }
-
-    final outputPath =
-        "${avatarDir.path}/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg";
-
-    final compressed = await FlutterImageCompress.compressAndGetFile(
-      file.path,
-      outputPath,
-      quality: 70,
-    );
-
-    return compressed?.path ?? "";
-  }
-
-  // ----------------------------------------------------------
-  // REGISTER USER
-  // ----------------------------------------------------------
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => loading = true);
-
-    // Save avatar (optional)
-    String avatarUrl = "";
-    if (avatarImage != null) {
-      avatarUrl = await saveAvatarLocal(avatarImage!);
-    }
 
     final error = await auth.register(
       name: nameCtrl.text.trim(),
@@ -83,7 +32,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       password: passCtrl.text.trim(),
       phone: phoneCtrl.text.trim(),
       role: role,
-      avatarUrl: avatarUrl, // FIXED PARAMETER
+      avatarUrl: '',
     );
 
     setState(() => loading = false);
@@ -100,101 +49,151 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-  // ----------------------------------------------------------
-  // UI
-  // ----------------------------------------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Create Account")),
+      appBar: AppBar(title: const Text("Create Account"), centerTitle: true),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         child: Form(
           key: _formKey,
           child: Column(
             children: [
+              // Logo
+              Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blueAccent, Colors.purpleAccent],
+                  ),
+                  shape: BoxShape.circle,
+                  boxShadow: [BoxShadow(color: Colors.black38, blurRadius: 5)],
+                ),
+                child: const Icon(
+                  Icons.medical_services,
+                  size: 50,
+                  color: Colors.white,
+                ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // Title
+              Text(
+                "Create your account",
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blueGrey,
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              // Name Field
               TextFormField(
                 controller: nameCtrl,
-                decoration: const InputDecoration(labelText: "Full Name"),
-                validator: (v) => v!.isEmpty ? "Enter your name" : null,
+                decoration: const InputDecoration(
+                  labelText: "Full Name",
+                  prefixIcon: Icon(Icons.person_outline),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) => value!.isEmpty ? "Enter your name" : null,
               ),
 
+              const SizedBox(height: 20),
+
+              // Email Field
               TextFormField(
                 controller: emailCtrl,
-                decoration: const InputDecoration(labelText: "Email"),
-                validator: (v) {
-                  if (v == null || !v.contains("@")) return "Enter a valid email";
-                  return null;
-                },
+                decoration: const InputDecoration(
+                  labelText: "Email",
+                  prefixIcon: Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    value!.isEmpty || !value.contains('@') ? "Enter a valid email" : null,
               ),
 
+              const SizedBox(height: 20),
+
+              // Phone Field
               TextFormField(
                 controller: phoneCtrl,
-                decoration: const InputDecoration(labelText: "Phone Number"),
                 keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                validator: (v) {
-                  if (v == null || v.isEmpty) return "Enter phone number";
-                  if (v.length < 8) return "Number too short";
+                decoration: const InputDecoration(
+                  labelText: "Phone Number",
+                  prefixIcon: Icon(Icons.phone_outlined),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) return "Enter phone number";
+                  if (value.length < 8) return "Number too short";
                   return null;
                 },
               ),
 
+              const SizedBox(height: 20),
+
+              // Password Field
               TextFormField(
                 controller: passCtrl,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: "Password"),
-                validator: (v) =>
-                    v!.length < 6 ? "Min 6 characters required" : null,
+                decoration: const InputDecoration(
+                  labelText: "Password",
+                  prefixIcon: Icon(Icons.lock_outline),
+                  border: OutlineInputBorder(),
+                ),
+                validator: (value) =>
+                    value!.length < 6 ? "Min 6 characters required" : null,
               ),
 
-              const SizedBox(height: 15),
-              const Text("Select Role"),
+              const SizedBox(height: 20),
 
-              DropdownButton<String>(
+              // Role Dropdown
+              DropdownButtonFormField<String>(
                 value: role,
+                onChanged: (newRole) => setState(() => role = newRole!),
                 items: const [
                   DropdownMenuItem(value: "renter", child: Text("Renter")),
                   DropdownMenuItem(value: "admin", child: Text("Admin")),
                 ],
-                onChanged: (value) => setState(() => role = value!),
-              ),
-
-              const SizedBox(height: 20),
-              const Text("Profile Picture (optional)"),
-
-              ElevatedButton(
-                onPressed: pickAvatar,
-                child: const Text("Choose Avatar"),
-              ),
-
-              if (avatarImage != null)
-                Padding(
-                  padding: const EdgeInsets.all(10),
-                  child: CircleAvatar(
-                    radius: 45,
-                    backgroundImage: FileImage(avatarImage!),
-                  ),
+                decoration: const InputDecoration(
+                  labelText: "Select Role",
+                  border: OutlineInputBorder(),
                 ),
+              ),
 
               const SizedBox(height: 20),
 
+              // Register Button
               ElevatedButton(
                 onPressed: loading ? null : _register,
                 child: loading
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text("Create Account"),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  minimumSize: Size(double.infinity, 50),
+                ),
               ),
 
+              const SizedBox(height: 16),
+
+              // Login Link
               TextButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                );
-              },
-              child: const Text("Do you have an account? Login"),
-            ),
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+                },
+                child: const Text(
+                  "Already have an account? Login",
+                  style: TextStyle(color: Colors.blue),
+                ),
+              ),
             ],
           ),
         ),
