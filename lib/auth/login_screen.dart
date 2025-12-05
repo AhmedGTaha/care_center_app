@@ -1,4 +1,8 @@
+// lib/auth/enhanced_login_screen.dart
 import 'package:flutter/material.dart';
+import '../constants/app_theme.dart';
+import '../widgets/animated_button.dart';
+import '../widgets/slide_in_animation.dart';
 import 'auth_service.dart';
 import '../screens/admin/admin_home.dart';
 import '../screens/renter/renter_home.dart';
@@ -9,40 +13,85 @@ class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<LoginScreen> createState() => _EnhancedLoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _EnhancedLoginScreenState extends State<LoginScreen>
+    with SingleTickerProviderStateMixin {
   final emailCtrl = TextEditingController();
   final passCtrl = TextEditingController();
   final auth = AuthService();
   bool loading = false;
+  bool _obscurePassword = true;
+  late AnimationController _animationController;
+  late Animation<double> _fadeAnimation;
+  late Animation<Offset> _slideAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 1200),
+      vsync: this,
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOut),
+      ),
+    );
+
+    _slideAnimation = Tween<Offset>(
+      begin: const Offset(0, 0.3),
+      end: Offset.zero,
+    ).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.2, 1.0, curve: Curves.easeOut),
+      ),
+    );
+
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    emailCtrl.dispose();
+    passCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _login() async {
+    if (emailCtrl.text.trim().isEmpty || passCtrl.text.trim().isEmpty) {
+      _showSnackBar("Please enter email and password", AppTheme.warningColor);
+      return;
+    }
+
     setState(() => loading = true);
 
     final error = await auth.login(emailCtrl.text.trim(), passCtrl.text.trim());
     setState(() => loading = false);
 
     if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error)),
-      );
+      _showSnackBar(error, AppTheme.errorColor);
       return;
     }
 
-    // Check user role
     final role = await auth.getUserRole();
+
+    if (!mounted) return;
 
     if (role == "admin") {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const AdminHome()),
+        _createRoute(const AdminHome()),
       );
     } else {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const RenterHome()),
+        _createRoute(const RenterHome()),
       );
     }
   }
@@ -50,213 +99,303 @@ class _LoginScreenState extends State<LoginScreen> {
   void _continueAsGuest() {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const GuestHome()),
+      _createRoute(const GuestHome()),
+    );
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              color == AppTheme.errorColor ? Icons.error_outline : Icons.info_outline,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 12),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppTheme.borderRadiusMedium,
+        ),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  Route _createRoute(Widget page) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        const begin = Offset(1.0, 0.0);
+        const end = Offset.zero;
+        const curve = Curves.easeInOut;
+        var tween = Tween(begin: begin, end: end).chain(
+          CurveTween(curve: curve),
+        );
+        var offsetAnimation = animation.drive(tween);
+        return SlideTransition(position: offsetAnimation, child: child);
+      },
+      transitionDuration: const Duration(milliseconds: 400),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // App Icon/Logo
-                Icon(
-                  Icons.medical_services,
-                  size: 80,
-                  color: Colors.blue.shade700,
-                ),
-                const SizedBox(height: 20),
-
-                // App Title
-                const Text(
-                  "Care Center App",
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  "Login to your account",
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey.shade600,
-                  ),
-                ),
-
-                const SizedBox(height: 40),
-
-                // Email Field
-                TextField(
-                  controller: emailCtrl,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(
-                    labelText: "Email",
-                    prefixIcon: const Icon(Icons.email),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Password Field
-                TextField(
-                  controller: passCtrl,
-                  obscureText: true,
-                  decoration: InputDecoration(
-                    labelText: "Password",
-                    prefixIcon: const Icon(Icons.lock),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 24),
-
-                // Login Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: loading ? null : _login,
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: loading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              AppTheme.primaryColor.withOpacity(0.05),
+              AppTheme.secondaryColor.withOpacity(0.05),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Center(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // App Logo
+                      SlideInAnimation(
+                        delay: 0,
+                        child: Hero(
+                          tag: 'app_logo',
+                          child: Container(
+                            width: 100,
+                            height: 100,
+                            decoration: BoxDecoration(
+                              gradient: AppTheme.primaryGradient,
+                              shape: BoxShape.circle,
+                              boxShadow: AppTheme.elevatedShadow,
                             ),
-                          )
-                        : const Text(
-                            "Login",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                            child: const Icon(
+                              Icons.medical_services,
+                              size: 50,
+                              color: Colors.white,
                             ),
                           ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Register Button
-                TextButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const RegisterScreen(),
-                      ),
-                    );
-                  },
-                  child: const Text(
-                    "Don't have an account? Register",
-                    style: TextStyle(fontSize: 15),
-                  ),
-                ),
-
-                const SizedBox(height: 20),
-
-                // Divider
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: Colors.grey.shade400)),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        "OR",
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ),
-                    Expanded(child: Divider(color: Colors.grey.shade400)),
-                  ],
-                ),
 
-                const SizedBox(height: 20),
+                      const SizedBox(height: 32),
 
-                // Guest Button
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: _continueAsGuest,
-                    icon: const Icon(Icons.person_outline),
-                    label: const Text(
-                      "Join as Guest",
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                      // App Title
+                      SlideInAnimation(
+                        delay: 100,
+                        child: ShaderMask(
+                          shaderCallback: (bounds) =>
+                              AppTheme.primaryGradient.createShader(bounds),
+                          child: const Text(
+                            "Care Center",
+                            style: TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      padding: const EdgeInsets.all(16),
-                      side: BorderSide(color: Colors.orange.shade700, width: 2),
-                      foregroundColor: Colors.orange.shade700,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                ),
 
-                const SizedBox(height: 16),
+                      const SizedBox(height: 8),
 
-                // Guest Info
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.info_outline,
-                          color: Colors.orange.shade700, size: 20),
-                      const SizedBox(width: 10),
-                      Expanded(
+                      SlideInAnimation(
+                        delay: 200,
                         child: Text(
-                          "Guest mode: Browse equipment and donate items",
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.orange.shade900,
+                          "Welcome Back",
+                          style: AppTheme.bodyLarge.copyWith(
+                            color: AppTheme.textSecondary,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 48),
+
+                      // Login Form
+                      SlideInAnimation(
+                        delay: 300,
+                        child: Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: AppTheme.borderRadiusLarge,
+                            boxShadow: AppTheme.cardShadow,
+                          ),
+                          child: Column(
+                            children: [
+                              // Email Field
+                              TextField(
+                                controller: emailCtrl,
+                                keyboardType: TextInputType.emailAddress,
+                                decoration: InputDecoration(
+                                  labelText: "Email",
+                                  hintText: "Enter your email",
+                                  prefixIcon: const Icon(Icons.email_outlined),
+                                  border: OutlineInputBorder(
+                                    borderRadius: AppTheme.borderRadiusMedium,
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 20),
+
+                              // Password Field
+                              TextField(
+                                controller: passCtrl,
+                                obscureText: _obscurePassword,
+                                decoration: InputDecoration(
+                                  labelText: "Password",
+                                  hintText: "Enter your password",
+                                  prefixIcon: const Icon(Icons.lock_outline),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_outlined
+                                          : Icons.visibility_off_outlined,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _obscurePassword = !_obscurePassword;
+                                      });
+                                    },
+                                  ),
+                                  border: OutlineInputBorder(
+                                    borderRadius: AppTheme.borderRadiusMedium,
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 32),
+
+                              // Login Button
+                              AnimatedButton(
+                                text: "Login",
+                                icon: Icons.login,
+                                onPressed: loading ? null : _login,
+                                isLoading: loading,
+                              ),
+
+                              const SizedBox(height: 16),
+
+                              // Register Link
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    _createRoute(const RegisterScreen()),
+                                  );
+                                },
+                                child: Text(
+                                  "Don't have an account? Register",
+                                  style: AppTheme.bodyMedium.copyWith(
+                                    color: AppTheme.primaryColor,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Divider
+                      SlideInAnimation(
+                        delay: 400,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Divider(
+                                color: AppTheme.textLight.withOpacity(0.5),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                              child: Text(
+                                "OR",
+                                style: AppTheme.bodySmall.copyWith(
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            Expanded(
+                              child: Divider(
+                                color: AppTheme.textLight.withOpacity(0.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 32),
+
+                      // Guest Button
+                      SlideInAnimation(
+                        delay: 500,
+                        child: AnimatedButton(
+                          text: "Continue as Guest",
+                          icon: Icons.person_outline,
+                          onPressed: _continueAsGuest,
+                          backgroundColor: Colors.white,
+                          foregroundColor: AppTheme.accentColor,
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Guest Info
+                      SlideInAnimation(
+                        delay: 600,
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentColor.withOpacity(0.1),
+                            borderRadius: AppTheme.borderRadiusMedium,
+                            border: Border.all(
+                              color: AppTheme.accentColor.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                color: AppTheme.accentColor,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  "Guest mode: Browse equipment and donate items",
+                                  style: AppTheme.bodySmall.copyWith(
+                                    color: AppTheme.accentColor,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
           ),
         ),
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    emailCtrl.dispose();
-    passCtrl.dispose();
-    super.dispose();
   }
 }
