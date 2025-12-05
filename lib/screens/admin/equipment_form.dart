@@ -108,7 +108,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   const SizedBox(height: 12),
 
                   DropdownButtonFormField<String>(
-                    value: selectedType,
+                    initialValue: selectedType,
                     items: types
                         .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                         .toList(),
@@ -126,7 +126,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   const SizedBox(height: 12),
 
                   DropdownButtonFormField<String>(
-                    value: selectedCondition,
+                    initialValue: selectedCondition,
                     items: conditions
                         .map((c) => DropdownMenuItem(value: c, child: Text(c)))
                         .toList(),

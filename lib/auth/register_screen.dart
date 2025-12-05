@@ -6,7 +6,6 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 
 import 'auth_service.dart';
-import '../constants/defaults.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -186,6 +185,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     ? const CircularProgressIndicator(color: Colors.white)
                     : const Text("Create Account"),
               ),
+
+              TextButton(
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+              },
+              child: const Text("Do you have an account? Login"),
+            ),
             ],
           ),
         ),
