@@ -29,7 +29,6 @@ class NotificationService {
     return db
         .collection("notifications")
         .where("userId", isEqualTo: userId)
-        .orderBy("createdAt", descending: true)
         .limit(50)
         .snapshots();
   }
@@ -39,7 +38,6 @@ class NotificationService {
     return db
         .collection("notifications")
         .where("type", whereIn: ["donation", "maintenance"])
-        .orderBy("createdAt", descending: true)
         .limit(50)
         .snapshots();
   }

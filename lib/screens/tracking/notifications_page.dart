@@ -57,6 +57,14 @@ class NotificationsPage extends StatelessWidget {
 
           final notifications = snapshot.data!.docs;
 
+          // Sort notifications by createdAt in memory (newest first)
+          notifications.sort((a, b) {
+            final aTime = (a.data() as Map<String, dynamic>)["createdAt"] as Timestamp?;
+            final bTime = (b.data() as Map<String, dynamic>)["createdAt"] as Timestamp?;
+            if (aTime == null || bTime == null) return 0;
+            return bTime.compareTo(aTime);
+          });
+
           return ListView.builder(
             padding: const EdgeInsets.all(12),
             itemCount: notifications.length,
