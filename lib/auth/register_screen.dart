@@ -1,3 +1,5 @@
+import 'package:care_center_app/screens/admin/admin_home.dart';
+import 'package:care_center_app/screens/renter/renter_home.dart';
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'login_screen.dart';
@@ -42,10 +44,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
         SnackBar(content: Text(error)),
       );
     } else {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+      // After successful registration, navigate based on role
+      if (role == "admin") {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AdminHome()),  // Redirect to Admin Home
+        );
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const RenterHome()),  // Redirect to Renter Home
+        );
+      }
     }
   }
 
