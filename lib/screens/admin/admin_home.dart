@@ -7,6 +7,8 @@ import 'admin_equipment_list.dart';
 import '../reservations/admin_reservations_page.dart';
 import '../donations/admin_donations_page.dart';
 import '../tracking/rental_tracking_page.dart';
+import '../profile/profile_page.dart';
+import '../reports/reports_page.dart';
 
 class AdminHome extends StatelessWidget {
   const AdminHome({super.key});
@@ -42,6 +44,12 @@ class AdminHome extends StatelessWidget {
           children: [
             _dashboardButton(
               context,
+              icon: Icons.person,
+              label: "Manage Profile",
+              page: ProfilePage(),
+            ),
+            _dashboardButton(
+              context,
               icon: Icons.inventory_2,
               label: "Manage Equipment",
               page: AdminEquipmentList(),
@@ -74,7 +82,7 @@ class AdminHome extends StatelessWidget {
               context,
               icon: Icons.analytics,
               label: "Reports",
-              page: const Placeholder(),
+              page: const ReportsPage(),
             ),
           ],
         ),

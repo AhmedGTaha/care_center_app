@@ -7,6 +7,7 @@ import '../reservations/renter_reservations_page.dart';
 import '../donations/donation_page.dart';
 import '../tracking/rental_tracking_page.dart';
 import '../tracking/notifications_page.dart';
+import '../profile/profile_page.dart';
 import '../../services/notification_service.dart';
 
 class RenterHome extends StatelessWidget {
@@ -95,6 +96,12 @@ class RenterHome extends StatelessWidget {
           children: [
             _dashboardButton(
               context,
+              icon: Icons.person,
+              label: "Manage Profile",
+              page: ProfilePage(),
+            ),
+            _dashboardButton(
+              context,
               icon: Icons.medical_services_outlined,
               label: "Browse Equipment",
               page: RenterEquipmentList(),
@@ -122,12 +129,6 @@ class RenterHome extends StatelessWidget {
               icon: Icons.notifications_active,
               label: "Notifications",
               page: const NotificationsPage(),
-            ),
-            _dashboardButton(
-              context,
-              icon: Icons.person,
-              label: "Profile",
-              page: const Placeholder(), // Ready for profile page
             ),
           ],
         ),
