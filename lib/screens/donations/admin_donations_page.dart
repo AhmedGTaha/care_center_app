@@ -6,6 +6,7 @@ import '../../models/donation_model.dart';
 import '../../models/equipment_model.dart';
 import '../../services/donation_service.dart';
 import '../../services/equipment_service.dart';
+import '../../services/notification_service.dart';
 import '../admin/equipment_form.dart';
 
 class AdminDonationsPage extends StatelessWidget {
@@ -13,6 +14,7 @@ class AdminDonationsPage extends StatelessWidget {
 
   final donationService = DonationService();
   final equipmentService = EquipmentService();
+  final notificationService = NotificationService();
 
   @override
   Widget build(BuildContext context) {
@@ -47,9 +49,7 @@ class AdminDonationsPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ------------------------------
                       // ITEM INFO
-                      // ------------------------------
                       Text(
                         d.itemName,
                         style: const TextStyle(
@@ -61,9 +61,7 @@ class AdminDonationsPage extends StatelessWidget {
 
                       const SizedBox(height: 6),
 
-                      // ------------------------------
                       // DONOR INFO - FIXED FOR GUESTS
-                      // ------------------------------
                       FutureBuilder<DocumentSnapshot>(
                         future: FirebaseFirestore.instance
                             .collection("donations")
@@ -202,9 +200,7 @@ class AdminDonationsPage extends StatelessWidget {
                         },
                       ),
 
-                      // ------------------------------
                       // IMAGE
-                      // ------------------------------
                       if (d.imagePath.isNotEmpty && File(d.imagePath).existsSync())
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
@@ -228,16 +224,12 @@ class AdminDonationsPage extends StatelessWidget {
 
                       const SizedBox(height: 10),
 
-                      // ------------------------------
                       // STATUS BADGE
-                      // ------------------------------
                       _statusBadge(d.status),
 
                       const SizedBox(height: 10),
 
-                      // ------------------------------
                       // ACTION BUTTONS
-                      // ------------------------------
                       if (d.status == "pending")
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
@@ -246,6 +238,24 @@ class AdminDonationsPage extends StatelessWidget {
                             TextButton(
                               onPressed: () async {
                                 await donationService.rejectDonation(d.id);
+
+                                // SEND NOTIFICATION TO DONOR (IF NOT GUEST)
+                                if (d.userId != "guest_user") {
+                                  await notificationService.createNotification(
+                                    userId: d.userId,
+                                    title: "Donation Rejected",
+                                    message:
+                                        "Your donation of ${d.itemName} has been rejected",
+                                    type: "donation_rejected",
+                                  );
+                                }
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text("Donation Rejected & User Notified"),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
                               },
                               child: const Text(
                                 "Reject",
@@ -260,6 +270,17 @@ class AdminDonationsPage extends StatelessWidget {
                               onPressed: () async {
                                 await donationService.approveDonation(d.id);
 
+                                // SEND NOTIFICATION TO DONOR (IF NOT GUEST)
+                                if (d.userId != "guest_user") {
+                                  await notificationService.createNotification(
+                                    userId: d.userId,
+                                    title: "Donation Approved",
+                                    message:
+                                        "Thank you! Your donation of ${d.itemName} has been approved and added to our inventory",
+                                    type: "donation_approved",
+                                  );
+                                }
+
                                 // Convert donation → Equipment
                                 final equipment = Equipment(
                                   id: "",
@@ -269,7 +290,7 @@ class AdminDonationsPage extends StatelessWidget {
                                   imagePath: d.imagePath,
                                   condition: d.condition,
                                   quantity: d.quantity,
-                                  status: "available",
+                                  status: "donated", // AUTOMATICALLY SET TO "donated"
                                   pricePerDay: 0,
                                 );
 
@@ -298,9 +319,6 @@ class AdminDonationsPage extends StatelessWidget {
     );
   }
 
-  // ------------------------------
-  // STATUS BADGE
-  // ------------------------------
   Widget _statusBadge(String status) {
     final color = status == "approved"
         ? Colors.green

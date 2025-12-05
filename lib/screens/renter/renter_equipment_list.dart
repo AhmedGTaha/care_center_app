@@ -254,31 +254,6 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 8),
-
-                // Toggle Filters
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    FilterChip(
-                      label: const Text("Available Only"),
-                      selected: showAvailableOnly,
-                      onSelected: (value) {
-                        setState(() => showAvailableOnly = value);
-                      },
-                      selectedColor: Colors.green.shade100,
-                    ),
-                    FilterChip(
-                      label: const Text("Donated Only"),
-                      selected: showDonatedOnly,
-                      onSelected: (value) {
-                        setState(() => showDonatedOnly = value);
-                      },
-                      selectedColor: Colors.blue.shade100,
-                    ),
-                  ],
-                ),
               ],
             ),
           ),

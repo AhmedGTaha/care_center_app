@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/equipment_model.dart';
 import '../../services/equipment_service.dart';
+import '../../services/notification_service.dart';
 import 'equipment_form.dart';
 
 class AdminEquipmentDetails extends StatefulWidget {
@@ -16,6 +17,7 @@ class AdminEquipmentDetails extends StatefulWidget {
 
 class _AdminEquipmentDetailsState extends State<AdminEquipmentDetails> {
   final equipmentService = EquipmentService();
+  final notificationService = NotificationService();
   bool loading = false;
   String currentStatus = "";
 
@@ -35,6 +37,14 @@ class _AdminEquipmentDetailsState extends State<AdminEquipmentDetails> {
           .collection("equipment")
           .doc(widget.eq.id)
           .update({"status": newStatus});
+
+      // SEND NOTIFICATION TO ADMINS WHEN STATUS CHANGES TO MAINTENANCE
+      if (newStatus == "maintenance") {
+        await notificationService.notifyMaintenanceNeeded(
+          widget.eq.id,
+          widget.eq.name,
+        );
+      }
 
       setState(() {
         currentStatus = newStatus;
@@ -89,7 +99,7 @@ class _AdminEquipmentDetailsState extends State<AdminEquipmentDetails> {
               foregroundColor: Colors.white,
             ),
             onPressed: () async {
-              Navigator.pop(context); // Close dialog
+              Navigator.pop(context);
               await _deleteEquipment();
             },
             child: const Text("Delete"),
@@ -113,7 +123,6 @@ class _AdminEquipmentDetailsState extends State<AdminEquipmentDetails> {
           ),
         );
 
-        // Pop twice to go back to equipment list
         Navigator.pop(context);
       }
     } catch (e) {
@@ -489,9 +498,38 @@ class _AdminEquipmentDetailsState extends State<AdminEquipmentDetails> {
             Text("Change Status"),
           ],
         ),
-        content: Text(
-          "Change equipment status from ${currentStatus.toUpperCase()} to ${newStatus.toUpperCase()}?",
-          style: const TextStyle(fontSize: 16),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Change equipment status from ${currentStatus.toUpperCase()} to ${newStatus.toUpperCase()}?",
+              style: const TextStyle(fontSize: 16),
+            ),
+            if (newStatus == "maintenance") ...[
+              const SizedBox(height: 15),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.notifications_active, color: Colors.orange, size: 20),
+                    SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        "All admins will be notified",
+                        style: TextStyle(fontSize: 14),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
         actions: [
           TextButton(

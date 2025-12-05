@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/reservation_model.dart';
 import '../../services/reservation_service.dart';
 import '../../services/equipment_service.dart';
+import '../../services/notification_service.dart';
 
 class AdminReservationsPage extends StatelessWidget {
   const AdminReservationsPage({super.key});
@@ -11,6 +12,7 @@ class AdminReservationsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final reservationService = ReservationService();
     final equipmentService = EquipmentService();
+    final notificationService = NotificationService();
 
     return Scaffold(
       appBar: AppBar(
@@ -153,8 +155,8 @@ class AdminReservationsPage extends StatelessWidget {
                               style: TextButton.styleFrom(
                                   foregroundColor: Colors.red),
                               onPressed: () {
-                                _reject(
-                                    reservationService, res.id, context);
+                                _reject(reservationService, notificationService,
+                                    res.id, res.userId, res.equipmentName, context);
                               },
                               icon: const Icon(Icons.cancel),
                               label: const Text("Reject"),
@@ -162,8 +164,12 @@ class AdminReservationsPage extends StatelessWidget {
                             const SizedBox(width: 10),
                             ElevatedButton.icon(
                               onPressed: () {
-                                _approve(reservationService, equipmentService,
-                                    res, context);
+                                _approve(
+                                    reservationService,
+                                    equipmentService,
+                                    notificationService,
+                                    res,
+                                    context);
                               },
                               icon: const Icon(Icons.check_circle),
                               label: const Text("Approve"),
@@ -300,18 +306,37 @@ class AdminReservationsPage extends StatelessWidget {
   }
 
   void _reject(
-      ReservationService service, String id, BuildContext context) async {
-    await service.rejectReservation(id);
+      ReservationService service,
+      NotificationService notificationService,
+      String reservationId,
+      String userId,
+      String equipmentName,
+      BuildContext context) async {
+    await service.rejectReservation(reservationId);
+
+    // SEND NOTIFICATION TO RENTER
+    await notificationService.createNotification(
+      userId: userId,
+      title: "Reservation Rejected",
+      message: "Your reservation for $equipmentName has been rejected",
+      type: "reservation_rejected",
+      reservationId: reservationId,
+    );
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text("Reservation Rejected"),
+        content: Text("Reservation Rejected & User Notified"),
         backgroundColor: Colors.red,
       ),
     );
   }
 
-  void _approve(ReservationService service, EquipmentService eqService,
-      Reservation res, BuildContext context) async {
+  void _approve(
+      ReservationService service,
+      EquipmentService eqService,
+      NotificationService notificationService,
+      Reservation res,
+      BuildContext context) async {
     // Approve reservation
     await service.approveReservation(res.id);
 
@@ -329,9 +354,20 @@ class AdminReservationsPage extends StatelessWidget {
       }
     }
 
+    // SEND NOTIFICATION TO RENTER
+    await notificationService.createNotification(
+      userId: res.userId,
+      title: "Reservation Approved",
+      message:
+          "Your reservation for ${res.equipmentName} has been approved! Pickup from: ${res.startDate.toString().split(' ')[0]}",
+      type: "reservation_approved",
+      reservationId: res.id,
+      equipmentId: res.equipmentId,
+    );
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text("Reservation Approved"),
+        content: Text("Reservation Approved & User Notified"),
         backgroundColor: Colors.green,
       ),
     );

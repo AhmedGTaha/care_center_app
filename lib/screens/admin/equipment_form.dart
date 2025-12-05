@@ -27,8 +27,8 @@ class _EquipmentFormState extends State<EquipmentForm> {
   final nameCtrl = TextEditingController();
   final descCtrl = TextEditingController();
   final priceCtrl = TextEditingController();
-  final locationCtrl = TextEditingController(); // NEW
-  final tagCtrl = TextEditingController(); // NEW
+  final locationCtrl = TextEditingController();
+  final tagCtrl = TextEditingController();
 
   String? selectedType;
   String? selectedCondition;
@@ -39,7 +39,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
   File? selectedImage;
   String oldImagePath = "";
 
-  List<String> tags = []; // NEW: List of tags
+  List<String> tags = [];
 
   final service = EquipmentService();
 
@@ -67,12 +67,12 @@ class _EquipmentFormState extends State<EquipmentForm> {
       nameCtrl.text = eq.name;
       descCtrl.text = eq.description;
       priceCtrl.text = eq.pricePerDay.toString();
-      locationCtrl.text = eq.location; // NEW
+      locationCtrl.text = eq.location;
       quantity = eq.quantity;
       selectedType = eq.type;
       selectedCondition = eq.condition;
       oldImagePath = eq.imagePath;
-      tags = List.from(eq.tags); // NEW
+      tags = List.from(eq.tags);
     }
   }
 
@@ -89,7 +89,6 @@ class _EquipmentFormState extends State<EquipmentForm> {
     setState(() => selectedImage = File(compressed?.path ?? picked.path));
   }
 
-  // NEW: Add tag
   void addTag() {
     final tag = tagCtrl.text.trim();
     if (tag.isNotEmpty && !tags.contains(tag)) {
@@ -100,7 +99,6 @@ class _EquipmentFormState extends State<EquipmentForm> {
     }
   }
 
-  // NEW: Remove tag
   void removeTag(String tag) {
     setState(() {
       tags.remove(tag);
@@ -125,6 +123,48 @@ class _EquipmentFormState extends State<EquipmentForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // DONATION NOTICE
+                  if (widget.isFromDonation)
+                    Container(
+                      padding: const EdgeInsets.all(15),
+                      margin: const EdgeInsets.only(bottom: 20),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.blue, width: 2),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.volunteer_activism,
+                              color: Colors.blue.shade700, size: 30),
+                          const SizedBox(width: 15),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Adding Donated Equipment",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue.shade900,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  "This equipment will be marked as donated with status: DONATED",
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.blue.shade800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
                   // Name
                   TextFormField(
                     controller: nameCtrl,
@@ -182,7 +222,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   ),
                   const SizedBox(height: 15),
 
-                  // NEW: Location Field
+                  // Location Field
                   TextFormField(
                     controller: locationCtrl,
                     decoration: const InputDecoration(
@@ -248,11 +288,13 @@ class _EquipmentFormState extends State<EquipmentForm> {
                         RegExp(r'^\d*\.?\d*$'),
                       ),
                     ],
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: "Price Per Day (BD) *",
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.payments),
-                      hintText: "0.00 for free/donated items",
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.payments),
+                      hintText: widget.isFromDonation
+                          ? "0.00 (Donated - Free)"
+                          : "0.00 for free/donated items",
                     ),
                     validator: (v) {
                       if (v == null || v.isEmpty) return "Required";
@@ -261,7 +303,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   ),
                   const SizedBox(height: 20),
 
-                  // NEW: Tags Section
+                  // Tags Section
                   const Text(
                     "Tags",
                     style: TextStyle(
@@ -385,6 +427,12 @@ class _EquipmentFormState extends State<EquipmentForm> {
                               await service.saveLocalImage(selectedImage!);
                         }
 
+                        // AUTOMATICALLY SET STATUS TO "donated" IF FROM DONATION
+                        String equipmentStatus = "available";
+                        if (widget.isFromDonation) {
+                          equipmentStatus = "donated";
+                        }
+
                         final eq = Equipment(
                           id: isEditing ? widget.equipment!.id : "",
                           name: nameCtrl.text.trim(),
@@ -393,10 +441,10 @@ class _EquipmentFormState extends State<EquipmentForm> {
                           imagePath: finalImage,
                           condition: selectedCondition!,
                           quantity: quantity,
-                          status: "available",
+                          status: equipmentStatus, // SET TO "donated" if from donation
                           pricePerDay: double.parse(priceCtrl.text),
-                          location: locationCtrl.text.trim(), // NEW
-                          tags: tags, // NEW
+                          location: locationCtrl.text.trim(),
+                          tags: tags,
                         );
 
                         if (widget.isFromDonation) {

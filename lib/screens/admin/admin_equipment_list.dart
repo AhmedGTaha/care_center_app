@@ -307,18 +307,6 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
                         ),
                       ],
                     ),
-
-                    const SizedBox(height: 8),
-
-                    // Toggle Filters
-                    FilterChip(
-                      label: const Text("Available Only"),
-                      selected: showAvailableOnly,
-                      onSelected: (value) {
-                        setState(() => showAvailableOnly = value);
-                      },
-                      selectedColor: Colors.green.shade100,
-                    ),
                   ],
                 ),
               );
