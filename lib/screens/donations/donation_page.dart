@@ -122,7 +122,7 @@ class _DonationPageState extends State<DonationPage> {
 
               DropdownButtonFormField(
                 decoration: const InputDecoration(labelText: "Type"),
-                value: type,
+                initialValue: type,
                 items: const [
                   DropdownMenuItem(value: "Wheelchair", child: Text("Wheelchair")),
                   DropdownMenuItem(value: "Walker", child: Text("Walker")),
@@ -142,7 +142,7 @@ class _DonationPageState extends State<DonationPage> {
 
               DropdownButtonFormField(
                 decoration: const InputDecoration(labelText: "Condition"),
-                value: condition,
+                initialValue: condition,
                 items: const [
                   DropdownMenuItem(value: "New", child: Text("New")),
                   DropdownMenuItem(value: "Like New", child: Text("Like New")),

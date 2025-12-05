@@ -256,7 +256,7 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.category),
                 ),
-                value: type,
+                initialValue: type,
                 items: const [
                   DropdownMenuItem(
                       value: "Wheelchair", child: Text("Wheelchair")),
@@ -288,7 +288,7 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.star),
                 ),
-                value: condition,
+                initialValue: condition,
                 items: const [
                   DropdownMenuItem(value: "New", child: Text("New")),
                   DropdownMenuItem(value: "Like New", child: Text("Like New")),

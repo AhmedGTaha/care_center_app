@@ -62,42 +62,143 @@ class AdminDonationsPage extends StatelessWidget {
                       const SizedBox(height: 6),
 
                       // ------------------------------
-                      // DONOR INFO
+                      // DONOR INFO - FIXED FOR GUESTS
                       // ------------------------------
                       FutureBuilder<DocumentSnapshot>(
                         future: FirebaseFirestore.instance
-                            .collection("users")
-                            .doc(d.userId)
+                            .collection("donations")
+                            .doc(d.id)
                             .get(),
-                        builder: (context, userSnap) {
-                          if (!userSnap.hasData) {
+                        builder: (context, donationSnap) {
+                          if (!donationSnap.hasData) {
                             return const Text(
                               "Loading donor info...",
                               style: TextStyle(fontStyle: FontStyle.italic),
                             );
                           }
 
-                          final user = userSnap.data!;
-                          final name = user["name"] ?? "Unknown User";
-                          final email = user["email"] ?? "No Email";
-                          final phone = user["phone"] ?? "No Phone";
+                          final donationData = donationSnap.data!.data() as Map<String, dynamic>?;
+                          
+                          // Check if this is a guest donation
+                          final isGuest = donationData?["isGuest"] ?? false;
+                          
+                          if (isGuest) {
+                            // For guest donations, use the stored donor info
+                            final guestName = donationData?["donorName"] ?? "Guest";
+                            final guestEmail = donationData?["donorEmail"] ?? "guest@example.com";
+                            final guestPhone = donationData?["donorPhone"] ?? "N/A";
 
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 6),
-                              Text(
-                                "Donated by: $name",
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.blue,
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.shade100,
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: Colors.orange,
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.person_outline,
+                                            size: 14,
+                                            color: Colors.orange.shade800,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            "GUEST DONATION",
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.orange.shade800,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                              Text("Email: $email"),
-                              Text("Phone: $phone"),
-                              const SizedBox(height: 10),
-                            ],
-                          );
+                                const SizedBox(height: 8),
+                                Text(
+                                  "Donated by: $guestName",
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                                Text("Email: $guestEmail"),
+                                Text("Phone: $guestPhone"),
+                                const SizedBox(height: 10),
+                              ],
+                            );
+                          } else {
+                            // For registered user donations, fetch from users collection
+                            return FutureBuilder<DocumentSnapshot>(
+                              future: FirebaseFirestore.instance
+                                  .collection("users")
+                                  .doc(d.userId)
+                                  .get(),
+                              builder: (context, userSnap) {
+                                if (!userSnap.hasData) {
+                                  return const Text(
+                                    "Loading user info...",
+                                    style: TextStyle(fontStyle: FontStyle.italic),
+                                  );
+                                }
+
+                                if (!userSnap.data!.exists) {
+                                  return Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const SizedBox(height: 6),
+                                      Text(
+                                        "Donated by: Unknown User (ID: ${d.userId})",
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                      const Text("User data not found"),
+                                      const SizedBox(height: 10),
+                                    ],
+                                  );
+                                }
+
+                                final user = userSnap.data!;
+                                final name = user["name"] ?? "Unknown User";
+                                final email = user["email"] ?? "No Email";
+                                final phone = user["phone"] ?? "No Phone";
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      "Donated by: $name",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.blue,
+                                      ),
+                                    ),
+                                    Text("Email: $email"),
+                                    Text("Phone: $phone"),
+                                    const SizedBox(height: 10),
+                                  ],
+                                );
+                              },
+                            );
+                          }
                         },
                       ),
 
@@ -105,18 +206,24 @@ class AdminDonationsPage extends StatelessWidget {
                       // IMAGE
                       // ------------------------------
                       if (d.imagePath.isNotEmpty && File(d.imagePath).existsSync())
-                        Image.file(
-                          File(d.imagePath),
-                          height: 130,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.file(
+                            File(d.imagePath),
+                            height: 130,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
                         )
                       else
-                        Image.asset(
-                          'assets/default_equipment.png',  // Default placeholder
-                          height: 130,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.asset(
+                            'assets/default_equipment.png',
+                            height: 130,
+                            width: double.infinity,
+                            fit: BoxFit.cover,
+                          ),
                         ),
 
                       const SizedBox(height: 10),

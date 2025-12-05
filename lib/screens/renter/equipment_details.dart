@@ -2,9 +2,7 @@ import 'dart:io';
 
 import 'package:care_center_app/screens/renter/reserve_page.dart';
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/equipment_model.dart';
-import '../../models/reservation_model.dart';
 
 class EquipmentDetails extends StatelessWidget {
   final Equipment eq;
