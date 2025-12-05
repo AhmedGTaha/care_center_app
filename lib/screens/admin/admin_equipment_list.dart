@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/equipment_model.dart';
 import '../../services/equipment_service.dart';
 import 'equipment_form.dart';
+import 'admin_equipment_details.dart';
 
 class AdminEquipmentList extends StatefulWidget {
   const AdminEquipmentList({super.key});
@@ -18,7 +19,7 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
   String searchQuery = "";
   String selectedType = "All";
   String selectedStatus = "All";
-  String selectedLocation = "All"; // NEW
+  String selectedLocation = "All";
   bool showAvailableOnly = false;
 
   List<String> equipmentTypes = [
@@ -45,7 +46,6 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
 
   bool missing(String p) => p.isEmpty || !File(p).existsSync();
 
-  // NEW: Get unique locations from equipment
   List<String> getLocations(List<Equipment> items) {
     final locations = items
         .map((eq) => eq.location)
@@ -80,7 +80,7 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
         return false;
       }
 
-      // NEW: Location filter
+      // Location filter
       if (selectedLocation != "All" && eq.location != selectedLocation) {
         return false;
       }
@@ -105,35 +105,34 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
     });
   }
 
-  void confirmDelete(BuildContext context, Equipment eq) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text("Delete ${eq.name}?"),
-        content: const Text("Are you sure you want to delete this equipment?"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Cancel"),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () async {
-              await service.deleteEquipment(eq);
-              Navigator.pop(context);
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case "available":
+        return Colors.green;
+      case "rented":
+        return Colors.orange;
+      case "donated":
+        return Colors.blue;
+      case "maintenance":
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text("${eq.name} deleted"),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            },
-            child: const Text("Delete"),
-          ),
-        ],
-      ),
-    );
+  IconData _getStatusIcon(String status) {
+    switch (status) {
+      case "available":
+        return Icons.check_circle;
+      case "rented":
+        return Icons.shopping_cart;
+      case "donated":
+        return Icons.volunteer_activism;
+      case "maintenance":
+        return Icons.build;
+      default:
+        return Icons.info;
+    }
   }
 
   @override
@@ -254,11 +253,23 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
                             items: statusOptions
                                 .map((status) => DropdownMenuItem(
                                       value: status,
-                                      child: Text(
-                                        status == "All"
-                                            ? "All"
-                                            : status[0].toUpperCase() +
-                                                status.substring(1),
+                                      child: Row(
+                                        children: [
+                                          if (status != "All") ...[
+                                            Icon(
+                                              _getStatusIcon(status),
+                                              size: 16,
+                                              color: _getStatusColor(status),
+                                            ),
+                                            const SizedBox(width: 8),
+                                          ],
+                                          Text(
+                                            status == "All"
+                                                ? "All"
+                                                : status[0].toUpperCase() +
+                                                    status.substring(1),
+                                          ),
+                                        ],
                                       ),
                                     ))
                                 .toList(),
@@ -272,7 +283,7 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
 
                     const SizedBox(height: 8),
 
-                    // NEW: Location Dropdown
+                    // Location Dropdown
                     Row(
                       children: [
                         const Text("Location: "),
@@ -367,68 +378,154 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
                     return Card(
                       elevation: 2,
                       margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        leading: ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: missing(eq.imagePath)
-                              ? Image.asset(placeholder,
-                                  height: 50, width: 50, fit: BoxFit.cover)
-                              : Image.file(File(eq.imagePath),
-                                  height: 50, width: 50, fit: BoxFit.cover),
-                        ),
-                        title: Text(eq.name),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Type: ${eq.type}"),
-                            if (eq.location.isNotEmpty)
-                              Text(
-                                "📍 ${eq.location}",
-                                style: const TextStyle(fontSize: 12),
-                              ),
-                            Text(
-                              "Stock: ${eq.quantity} | Price: BD ${eq.pricePerDay.toStringAsFixed(2)}/day",
-                              style: const TextStyle(fontSize: 12),
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => AdminEquipmentDetails(eq: eq),
                             ),
-                            if (eq.tags.isNotEmpty)
-                              Wrap(
-                                spacing: 4,
-                                children: eq.tags.take(3).map((tag) {
-                                  return Chip(
-                                    label: Text(
-                                      tag,
-                                      style: const TextStyle(fontSize: 10),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(12),
+                          child: Row(
+                            children: [
+                              // Image
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: missing(eq.imagePath)
+                                    ? Image.asset(placeholder,
+                                        height: 70, width: 70, fit: BoxFit.cover)
+                                    : Image.file(File(eq.imagePath),
+                                        height: 70, width: 70, fit: BoxFit.cover),
+                              ),
+                              const SizedBox(width: 12),
+
+                              // Details
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      eq.name,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
-                                    backgroundColor: Colors.blue.shade50,
-                                    padding: EdgeInsets.zero,
-                                    materialTapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                    visualDensity: VisualDensity.compact,
-                                  );
-                                }).toList(),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      eq.type,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.inventory,
+                                          size: 14,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          "Stock: ${eq.quantity}",
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        Icon(
+                                          Icons.payments,
+                                          size: 14,
+                                          color: Colors.grey.shade600,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          "BD ${eq.pricePerDay.toStringAsFixed(2)}/day",
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    if (eq.location.isNotEmpty) ...[
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.location_on,
+                                            size: 14,
+                                            color: Colors.grey.shade600,
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Expanded(
+                                            child: Text(
+                                              eq.location,
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Colors.grey.shade600,
+                                              ),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                    const SizedBox(height: 6),
+                                    // Status Badge
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: _getStatusColor(eq.status)
+                                            .withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(12),
+                                        border: Border.all(
+                                          color: _getStatusColor(eq.status),
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            _getStatusIcon(eq.status),
+                                            size: 12,
+                                            color: _getStatusColor(eq.status),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            eq.status.toUpperCase(),
+                                            style: TextStyle(
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                              color: _getStatusColor(eq.status),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                          ],
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.blue),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) =>
-                                        EquipmentForm(equipment: eq),
-                                  ),
-                                );
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () => confirmDelete(context, eq),
-                            ),
-                          ],
+
+                              // Arrow Icon
+                              const Icon(
+                                Icons.arrow_forward_ios,
+                                size: 18,
+                                color: Colors.blue,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     );

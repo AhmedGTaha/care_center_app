@@ -47,6 +47,36 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
     return path.isEmpty || !File(path).existsSync();
   }
 
+  Color _getStatusColor(String status) {
+    switch (status) {
+      case "available":
+        return Colors.green;
+      case "rented":
+        return Colors.orange;
+      case "donated":
+        return Colors.blue;
+      case "maintenance":
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status) {
+      case "available":
+        return Icons.check_circle;
+      case "rented":
+        return Icons.shopping_cart;
+      case "donated":
+        return Icons.volunteer_activism;
+      case "maintenance":
+        return Icons.build;
+      default:
+        return Icons.info;
+    }
+  }
+
   List<Equipment> _applyFilters(List<Equipment> items) {
     return items.where((eq) {
       // Search filter
@@ -197,11 +227,23 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
                         items: statusOptions
                             .map((status) => DropdownMenuItem(
                                   value: status,
-                                  child: Text(
-                                    status == "All"
-                                        ? "All"
-                                        : status[0].toUpperCase() +
-                                            status.substring(1),
+                                  child: Row(
+                                    children: [
+                                      if (status != "All") ...[
+                                        Icon(
+                                          _getStatusIcon(status),
+                                          size: 16,
+                                          color: _getStatusColor(status),
+                                        ),
+                                        const SizedBox(width: 8),
+                                      ],
+                                      Text(
+                                        status == "All"
+                                            ? "All"
+                                            : status[0].toUpperCase() +
+                                                status.substring(1),
+                                      ),
+                                    ],
                                   ),
                                 ))
                             .toList(),
@@ -290,7 +332,7 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
                   itemBuilder: (_, index) {
                     final eq = filteredItems[index];
                     final invalid = _isInvalidImage(eq.imagePath);
-                    final isAvailable = eq.quantity > 0;
+                    final isAvailable = eq.quantity > 0 && eq.status == "available";
                     final isDonated = eq.pricePerDay == 0;
 
                     return Card(
@@ -372,7 +414,9 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
                                       ],
                                     ),
                                     const SizedBox(height: 6),
-                                    Row(
+                                    Wrap(
+                                      spacing: 6,
+                                      runSpacing: 6,
                                       children: [
                                         // Price/Donated Badge
                                         Container(
@@ -407,49 +451,75 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
                                           ),
                                         ),
 
-                                        const SizedBox(width: 8),
-
-                                        // Availability Badge
+                                        // Status Badge
                                         Container(
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 8,
                                             vertical: 4,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: isAvailable
-                                                ? Colors.green.shade50
-                                                : Colors.red.shade50,
+                                            color: _getStatusColor(eq.status)
+                                                .withOpacity(0.2),
                                             borderRadius:
                                                 BorderRadius.circular(6),
+                                            border: Border.all(
+                                              color: _getStatusColor(eq.status),
+                                              width: 1,
+                                            ),
                                           ),
                                           child: Row(
                                             mainAxisSize: MainAxisSize.min,
                                             children: [
                                               Icon(
-                                                isAvailable
-                                                    ? Icons.check_circle
-                                                    : Icons.cancel,
-                                                size: 14,
-                                                color: isAvailable
-                                                    ? Colors.green
-                                                    : Colors.red,
+                                                _getStatusIcon(eq.status),
+                                                size: 12,
+                                                color: _getStatusColor(eq.status),
                                               ),
                                               const SizedBox(width: 4),
                                               Text(
-                                                isAvailable
-                                                    ? "Available"
-                                                    : "Not Available",
+                                                eq.status.toUpperCase(),
                                                 style: TextStyle(
                                                   fontSize: 11,
                                                   fontWeight: FontWeight.bold,
-                                                  color: isAvailable
-                                                      ? Colors.green
-                                                      : Colors.red,
+                                                  color: _getStatusColor(eq.status),
                                                 ),
                                               ),
                                             ],
                                           ),
                                         ),
+
+                                        // Availability Badge
+                                        if (isAvailable)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Colors.green.shade50,
+                                              borderRadius:
+                                                  BorderRadius.circular(6),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.check_circle,
+                                                  size: 12,
+                                                  color: Colors.green,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  "Can Reserve",
+                                                  style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.green,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
                                       ],
                                     ),
                                   ],
