@@ -66,11 +66,17 @@
       projectId: "care-center-ccdca",
       storageBucket: "care-center-ccdca.firebasestorage.app",
       messagingSenderId: "1044025031164",
-      appId: "1:1044025031164:web:1:1044025031164:web:30f9b264328f573b095a79"
+      appId: "1:1044025031164:web:c76354367c3c2bdd095a79"
     };
     
     // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
+    try {
+      firebase.initializeApp(firebaseConfig);
+      console.log('Firebase initialized successfully');
+      console.log('Storage bucket:', firebaseConfig.storageBucket);
+    } catch (error) {
+      console.error('Firebase initialization error:', error);
+    }
   </script>
   
   <script src="flutter_bootstrap.js" async></script>

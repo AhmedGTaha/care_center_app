@@ -21,21 +21,27 @@ void main() async {
   }
   
   // Initialize Firebase
-  // For web, Firebase is initialized in index.html
-  // For mobile, use the default initialization
-  if (kIsWeb) {
-    await Firebase.initializeApp(
-      options: const FirebaseOptions(
-        apiKey: "AIzaSyCyvwr-s8TOvlPvyWWXxuUWZmmO4rj8tVA",
-        authDomain: "care-center-ccdca.firebaseapp.com",
-        projectId: "care-center-ccdca",
-        storageBucket: "care-center-ccdca.firebasestorage.app",
-        messagingSenderId: "1044025031164",
-        appId: "1:1044025031164:web:c76354367c3c2bdd095a79" // Using Android app ID temporarily
-      ),
-    );
-  } else {
-    await Firebase.initializeApp();
+  try {
+    if (kIsWeb) {
+      // For web, Firebase is already initialized in index.html
+      // But we still need to call this to connect Flutter to it
+      await Firebase.initializeApp(
+        options: const FirebaseOptions(
+          apiKey: "AIzaSyCyvwr-s8TOvlPvyWWXxuUWZmmO4rj8tVA",
+          authDomain: "care-center-ccdca.firebaseapp.com",
+          projectId: "care-center-ccdca",
+          storageBucket: "care-center-ccdca.firebasestorage.app",
+          messagingSenderId: "1044025031164",
+          appId: "1:1044025031164:web:c76354367c3c2bdd095a79",
+        ),
+      );
+      debugPrint('✅ Firebase initialized for WEB');
+    } else {
+      await Firebase.initializeApp();
+      debugPrint('✅ Firebase initialized for MOBILE');
+    }
+  } catch (e) {
+    debugPrint('❌ Firebase initialization error: $e');
   }
 
   runApp(const CareCenterApp());

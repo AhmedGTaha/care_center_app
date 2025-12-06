@@ -22,6 +22,9 @@ dependencies:
 
   # UI
   cupertino_icons: ^1.0.8
+  
+  http: ^1.2.0
+
 
 flutter:
   uses-material-design: true

@@ -25,6 +25,7 @@ class _DonationPageState extends State<DonationPage> {
 
   XFile? selectedImage;
   bool submitting = false;
+  String loadingMessage = "";
 
   final service = DonationService();
   final imageService = ImageService();
@@ -39,15 +40,26 @@ class _DonationPageState extends State<DonationPage> {
   Future<void> submitDonation() async {
     if (!_formKey.currentState!.validate() || selectedImage == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Complete all fields and upload an image")),
+        const SnackBar(
+          content: Text("Complete all fields and upload an image"),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
 
-    setState(() => submitting = true);
+    setState(() {
+      submitting = true;
+      loadingMessage = "Preparing donation...";
+    });
 
     try {
+      setState(() => loadingMessage = "Uploading image...");
+      
       final path = await imageService.saveImage(selectedImage!, 'donations');
+      
+      setState(() => loadingMessage = "Submitting donation...");
+      
       final uid = FirebaseAuth.instance.currentUser!.uid;
 
       await service.submitDonation(
@@ -60,212 +72,281 @@ class _DonationPageState extends State<DonationPage> {
         condition: condition,
       );
 
+      setState(() => submitting = false);
+
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Donation submitted successfully")),
+        const SnackBar(
+          content: Text("Donation submitted successfully!"),
+          backgroundColor: Colors.green,
+        ),
       );
 
       Navigator.pop(context);
     } catch (e) {
       setState(() => submitting = false);
 
+      if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e")),
+        SnackBar(
+          content: Text("Error: ${e.toString()}"),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
       );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Donate Equipment"),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              const SizedBox(height: 10),
-              GestureDetector(
-                onTap: pickImage,
-                child: Container(
-                  height: 150,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade400),
-                  ),
-                  child: selectedImage != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: kIsWeb
-                              ? FutureBuilder<Uint8List>(
-                                  future: selectedImage!.readAsBytes(),
-                                  builder: (context, snapshot) {
-                                    if (snapshot.hasData) {
-                                      return Image.memory(
-                                        snapshot.data!,
-                                        fit: BoxFit.cover,
-                                      );
-                                    }
-                                    return const Center(
-                                      child: CircularProgressIndicator(),
-                                    );
-                                  },
-                                )
-                              : Image.file(
-                                  File(selectedImage!.path),
-                                  fit: BoxFit.cover,
-                                ),
-                        )
-                      : Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.camera_alt,
-                                size: 50, color: Colors.grey.shade600),
-                            const SizedBox(height: 10),
-                            Text(
-                              "Tap to add photo",
-                              style: TextStyle(color: Colors.grey.shade600),
-                            ),
-                          ],
-                        ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-
-              TextFormField(
-                controller: itemCtrl,
-                decoration: const InputDecoration(
-                  labelText: "Item Name *",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.medical_services),
-                ),
-                validator: (v) =>
-                    v!.isEmpty ? "Enter the equipment name" : null,
-              ),
-
-              const SizedBox(height: 15),
-
-              DropdownButtonFormField(
-                decoration: const InputDecoration(
-                  labelText: "Type *",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.category),
-                ),
-                initialValue: type,
-                items: const [
-                  DropdownMenuItem(
-                      value: "Wheelchair", child: Text("Wheelchair")),
-                  DropdownMenuItem(value: "Walker", child: Text("Walker")),
-                  DropdownMenuItem(value: "Crutches", child: Text("Crutches")),
-                  DropdownMenuItem(
-                      value: "Hospital Bed", child: Text("Hospital Bed")),
-                  DropdownMenuItem(
-                      value: "Oxygen Machine", child: Text("Oxygen Machine")),
-                  DropdownMenuItem(
-                      value: "Medical Monitor", child: Text("Medical Monitor")),
-                  DropdownMenuItem(
-                      value: "Mobility Scooter",
-                      child: Text("Mobility Scooter")),
-                  DropdownMenuItem(
-                      value: "Hoist / Lift", child: Text("Hoist / Lift")),
-                  DropdownMenuItem(value: "Chair", child: Text("Chair")),
-                  DropdownMenuItem(value: "Other", child: Text("Other")),
-                ],
-                onChanged: (v) => setState(() => type = v!),
-              ),
-
-              const SizedBox(height: 15),
-
-              DropdownButtonFormField(
-                decoration: const InputDecoration(
-                  labelText: "Condition *",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.star),
-                ),
-                initialValue: condition,
-                items: const [
-                  DropdownMenuItem(value: "New", child: Text("New")),
-                  DropdownMenuItem(value: "Like New", child: Text("Like New")),
-                  DropdownMenuItem(value: "Good", child: Text("Good")),
-                  DropdownMenuItem(value: "Fair", child: Text("Fair")),
-                  DropdownMenuItem(value: "Poor", child: Text("Poor")),
-                ],
-                onChanged: (v) => setState(() => condition = v!),
-              ),
-
-              const SizedBox(height: 15),
-
-              Row(
+    return Stack(
+      children: [
+        Scaffold(
+          appBar: AppBar(
+            title: const Text("Donate Equipment"),
+            centerTitle: true,
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text("Quantity *",
-                      style:
-                          TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.remove_circle, color: Colors.red),
-                    onPressed: quantity > 1
-                        ? () => setState(() => quantity--)
-                        : null,
+                  const Text(
+                    "Equipment Photo *",
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue, width: 2),
+                  const SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: pickImage,
+                    child: Container(
+                      height: 150,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade400),
+                      ),
+                      child: selectedImage != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: kIsWeb
+                                  ? FutureBuilder<Uint8List>(
+                                      future: selectedImage!.readAsBytes(),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.hasData) {
+                                          return Image.memory(
+                                            snapshot.data!,
+                                            fit: BoxFit.cover,
+                                          );
+                                        }
+                                        return const Center(
+                                          child: CircularProgressIndicator(),
+                                        );
+                                      },
+                                    )
+                                  : Image.file(
+                                      File(selectedImage!.path),
+                                      fit: BoxFit.cover,
+                                    ),
+                            )
+                          : Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.camera_alt,
+                                    size: 50, color: Colors.grey.shade600),
+                                const SizedBox(height: 10),
+                                Text(
+                                  "Tap to add photo",
+                                  style: TextStyle(color: Colors.grey.shade600),
+                                ),
+                              ],
+                            ),
                     ),
-                    child: Text(
-                      quantity.toString(),
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue,
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  TextFormField(
+                    controller: itemCtrl,
+                    decoration: const InputDecoration(
+                      labelText: "Item Name *",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.medical_services),
+                    ),
+                    validator: (v) =>
+                        v!.isEmpty ? "Enter the equipment name" : null,
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  DropdownButtonFormField(
+                    decoration: const InputDecoration(
+                      labelText: "Type *",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.category),
+                    ),
+                    value: type,
+                    items: const [
+                      DropdownMenuItem(
+                          value: "Wheelchair", child: Text("Wheelchair")),
+                      DropdownMenuItem(value: "Walker", child: Text("Walker")),
+                      DropdownMenuItem(value: "Crutches", child: Text("Crutches")),
+                      DropdownMenuItem(
+                          value: "Hospital Bed", child: Text("Hospital Bed")),
+                      DropdownMenuItem(
+                          value: "Oxygen Machine", child: Text("Oxygen Machine")),
+                      DropdownMenuItem(
+                          value: "Medical Monitor", child: Text("Medical Monitor")),
+                      DropdownMenuItem(
+                          value: "Mobility Scooter",
+                          child: Text("Mobility Scooter")),
+                      DropdownMenuItem(
+                          value: "Hoist / Lift", child: Text("Hoist / Lift")),
+                      DropdownMenuItem(value: "Chair", child: Text("Chair")),
+                      DropdownMenuItem(value: "Other", child: Text("Other")),
+                    ],
+                    onChanged: (v) => setState(() => type = v!),
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  DropdownButtonFormField(
+                    decoration: const InputDecoration(
+                      labelText: "Condition *",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.star),
+                    ),
+                    value: condition,
+                    items: const [
+                      DropdownMenuItem(value: "New", child: Text("New")),
+                      DropdownMenuItem(value: "Like New", child: Text("Like New")),
+                      DropdownMenuItem(value: "Good", child: Text("Good")),
+                      DropdownMenuItem(value: "Fair", child: Text("Fair")),
+                      DropdownMenuItem(value: "Poor", child: Text("Poor")),
+                    ],
+                    onChanged: (v) => setState(() => condition = v!),
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  Row(
+                    children: [
+                      const Text("Quantity *",
+                          style:
+                              TextStyle(fontSize: 16, fontWeight: FontWeight.w500)),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.remove_circle, color: Colors.red),
+                        onPressed: quantity > 1
+                            ? () => setState(() => quantity--)
+                            : null,
+                      ),
+                      Container(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue, width: 2),
+                        ),
+                        child: Text(
+                          quantity.toString(),
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.add_circle, color: Colors.green),
+                        onPressed: () => setState(() => quantity++),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 15),
+
+                  TextFormField(
+                    controller: descCtrl,
+                    decoration: const InputDecoration(
+                      labelText: "Description *",
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.description),
+                      alignLabelWithHint: true,
+                    ),
+                    maxLines: 4,
+                    validator: (v) => v!.isEmpty ? "Enter a description" : null,
+                  ),
+
+                  const SizedBox(height: 25),
+
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: submitting ? null : submitDonation,
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.all(16),
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text(
+                        "Submit Donation",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle, color: Colors.green),
-                    onPressed: () => setState(() => quantity++),
-                  ),
                 ],
               ),
-
-              const SizedBox(height: 15),
-
-              TextFormField(
-                controller: descCtrl,
-                decoration: const InputDecoration(
-                  labelText: "Description *",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.description),
-                  alignLabelWithHint: true,
-                ),
-                maxLines: 4,
-                validator: (v) => v!.isEmpty ? "Enter a description" : null,
-              ),
-
-              const SizedBox(height: 25),
-
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: submitting ? null : submitDonation,
-                  child: submitting
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text("Submit Donation"),
-                ),
-              ),
-            ],
+            ),
           ),
         ),
-      ),
+        
+        if (submitting)
+          Container(
+            color: Colors.black54,
+            child: Center(
+              child: Card(
+                margin: const EdgeInsets.all(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(30),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(
+                        color: Colors.green,
+                        strokeWidth: 4,
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        loadingMessage,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        "Please wait...",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

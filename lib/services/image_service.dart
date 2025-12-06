@@ -1,39 +1,80 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 
 class ImageService {
-  final FirebaseStorage _storage = FirebaseStorage.instance;
-
+  // ⚠️ REPLACE THESE WITH YOUR CLOUDINARY CREDENTIALS
+  static const String cloudName = "dbjfoekyy";  // Replace this
+  static const String uploadPreset = "care_center_uploads";     // Use "ml_default" or create your own
+  
   /// Save image - works for both web and mobile
   Future<String> saveImage(XFile imageFile, String folder) async {
     if (kIsWeb) {
-      return await _saveImageWeb(imageFile, folder);
+      return await _uploadToCloudinary(imageFile, folder);
     } else {
+      // For mobile, still save locally
       return await _saveImageMobile(imageFile, folder);
     }
   }
 
-  /// Save image on web (upload to Firebase Storage)
-  Future<String> _saveImageWeb(XFile imageFile, String folder) async {
+  /// Upload image to Cloudinary (works on web and mobile)
+  Future<String> _uploadToCloudinary(XFile imageFile, String folder) async {
     try {
-      final bytes = await imageFile.readAsBytes();
-      final fileName = '${folder}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final ref = _storage.ref().child('$folder/$fileName');
+      debugPrint('📤 Starting Cloudinary upload...');
       
-      await ref.putData(
-        bytes,
-        SettableMetadata(contentType: 'image/jpeg'),
+      // Read image bytes
+      final bytes = await imageFile.readAsBytes();
+      final base64Image = base64Encode(bytes);
+      
+      debugPrint('📸 Image size: ${bytes.length} bytes');
+      
+      // Cloudinary upload URL
+      final url = Uri.parse(
+        'https://api.cloudinary.com/v1_1/$cloudName/image/upload'
       );
       
-      final downloadUrl = await ref.getDownloadURL();
-      return downloadUrl;
+      // Prepare form data
+      final request = http.MultipartRequest('POST', url);
+      request.fields['upload_preset'] = uploadPreset;
+      request.fields['folder'] = folder;
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'file',
+          bytes,
+          filename: '${folder}_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        ),
+      );
+      
+      debugPrint('🚀 Uploading to Cloudinary...');
+      
+      // Send request with timeout
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 30),
+        onTimeout: () {
+          throw Exception('Upload timeout - please check your internet connection');
+        },
+      );
+      
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final imageUrl = data['secure_url'] as String;
+        debugPrint('✅ Upload successful: $imageUrl');
+        return imageUrl;
+      } else {
+        debugPrint('❌ Upload failed: ${response.statusCode}');
+        debugPrint('Response: ${response.body}');
+        throw Exception('Upload failed: ${response.body}');
+      }
     } catch (e) {
-      debugPrint('Error saving image on web: $e');
-      return '';
+      debugPrint('❌ Cloudinary upload error: $e');
+      rethrow;
     }
   }
 
@@ -62,24 +103,14 @@ class ImageService {
     }
   }
 
-  /// Delete image - works for both web and mobile
+  /// Delete image - only works for mobile local files
   Future<void> deleteImage(String imagePath) async {
     if (kIsWeb) {
-      await _deleteImageWeb(imagePath);
+      // On web with Cloudinary, we can't delete (or we'd need API key/secret)
+      debugPrint('🗑️ Skipping delete on web (Cloudinary images persist)');
+      return;
     } else {
       await _deleteImageMobile(imagePath);
-    }
-  }
-
-  /// Delete image from Firebase Storage (web)
-  Future<void> _deleteImageWeb(String imageUrl) async {
-    try {
-      if (imageUrl.isEmpty || !imageUrl.startsWith('http')) return;
-      
-      final ref = _storage.refFromURL(imageUrl);
-      await ref.delete();
-    } catch (e) {
-      debugPrint('Error deleting image from Firebase: $e');
     }
   }
 
@@ -104,22 +135,33 @@ class ImageService {
     BoxFit fit = BoxFit.cover,
     String defaultAsset = 'assets/default_equipment.png',
   }) {
-    if (kIsWeb) {
-      // On web, use network image for Firebase URLs
-      if (imagePath.isEmpty || !imagePath.startsWith('http')) {
-        return Image.asset(
-          defaultAsset,
-          width: width,
-          height: height,
-          fit: fit,
-        );
-      }
+    // Handle empty or invalid paths
+    if (imagePath.isEmpty) {
+      return Image.asset(
+        defaultAsset,
+        width: width,
+        height: height,
+        fit: fit,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: width,
+            height: height,
+            color: Colors.grey[300],
+            child: const Icon(Icons.image_not_supported),
+          );
+        },
+      );
+    }
+
+    // Check if it's a Cloudinary URL or any HTTP URL
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return Image.network(
         imagePath,
         width: width,
         height: height,
         fit: fit,
         errorBuilder: (context, error, stackTrace) {
+          debugPrint('Error loading network image: $error');
           return Image.asset(
             defaultAsset,
             width: width,
@@ -132,15 +174,22 @@ class ImageService {
           return SizedBox(
             width: width,
             height: height,
-            child: const Center(
-              child: CircularProgressIndicator(),
+            child: Center(
+              child: CircularProgressIndicator(
+                value: loadingProgress.expectedTotalBytes != null
+                    ? loadingProgress.cumulativeBytesLoaded /
+                        loadingProgress.expectedTotalBytes!
+                    : null,
+              ),
             ),
           );
         },
       );
-    } else {
-      // On mobile, use file image for local files
-      if (imagePath.isEmpty || !File(imagePath).existsSync()) {
+    }
+    
+    // For mobile local files
+    if (!kIsWeb) {
+      if (!File(imagePath).existsSync()) {
         return Image.asset(
           defaultAsset,
           width: width,
@@ -153,16 +202,38 @@ class ImageService {
         width: width,
         height: height,
         fit: fit,
+        errorBuilder: (context, error, stackTrace) {
+          return Image.asset(
+            defaultAsset,
+            width: width,
+            height: height,
+            fit: fit,
+          );
+        },
       );
     }
+    
+    // Fallback
+    return Image.asset(
+      defaultAsset,
+      width: width,
+      height: height,
+      fit: fit,
+    );
   }
 
   /// Check if image path is valid
   bool isValidImage(String imagePath) {
-    if (kIsWeb) {
-      return imagePath.isNotEmpty && imagePath.startsWith('http');
-    } else {
-      return imagePath.isNotEmpty && File(imagePath).existsSync();
+    if (imagePath.isEmpty) return false;
+    
+    if (imagePath.startsWith('http')) {
+      return true;
     }
+    
+    if (!kIsWeb && File(imagePath).existsSync()) {
+      return true;
+    }
+    
+    return false;
   }
 }

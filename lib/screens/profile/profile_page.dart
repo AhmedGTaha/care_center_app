@@ -1,11 +1,12 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:path_provider/path_provider.dart';
+import '../../services/image_service.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -26,10 +27,12 @@ class _ProfilePageState extends State<ProfilePage> {
   String role = "";
   String avatarUrl = "";
   
-  File? newAvatar;
+  XFile? newAvatar;
   bool loading = true;
   bool editing = false;
   bool saving = false;
+
+  final ImageService _imageService = ImageService();
 
   @override
   void initState() {
@@ -63,28 +66,8 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> pickAvatar() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked != null) {
-      setState(() => newAvatar = File(picked.path));
+      setState(() => newAvatar = picked);
     }
-  }
-
-  Future<String> saveAvatarLocal(File file) async {
-    final dir = await getApplicationDocumentsDirectory();
-    final avatarDir = Directory("${dir.path}/avatars");
-
-    if (!avatarDir.existsSync()) {
-      avatarDir.createSync(recursive: true);
-    }
-
-    final outputPath =
-        "${avatarDir.path}/avatar_${DateTime.now().millisecondsSinceEpoch}.jpg";
-
-    final compressed = await FlutterImageCompress.compressAndGetFile(
-      file.path,
-      outputPath,
-      quality: 70,
-    );
-
-    return compressed?.path ?? "";
   }
 
   Future<void> _saveProfile() async {
@@ -92,37 +75,119 @@ class _ProfilePageState extends State<ProfilePage> {
 
     setState(() => saving = true);
 
-    final uid = FirebaseAuth.instance.currentUser!.uid;
-    String finalAvatarUrl = avatarUrl;
+    try {
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+      String finalAvatarUrl = avatarUrl;
 
-    // Save new avatar if selected
-    if (newAvatar != null) {
-      finalAvatarUrl = await saveAvatarLocal(newAvatar!);
+      // Save new avatar if selected
+      if (newAvatar != null) {
+        // Delete old avatar if it exists and is a Firebase URL (web)
+        if (kIsWeb && avatarUrl.isNotEmpty && avatarUrl.startsWith('http')) {
+          await _imageService.deleteImage(avatarUrl);
+        }
+        
+        finalAvatarUrl = await _imageService.saveImage(newAvatar!, 'avatars');
+      }
+
+      await FirebaseFirestore.instance
+          .collection("users")
+          .doc(uid)
+          .update({
+        "name": nameCtrl.text.trim(),
+        "phone": phoneCtrl.text.trim(),
+        "preferredContact": preferredContact,
+        "avatarUrl": finalAvatarUrl,
+      });
+
+      setState(() {
+        saving = false;
+        editing = false;
+        avatarUrl = finalAvatarUrl;
+        newAvatar = null;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Profile updated successfully"),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      setState(() => saving = false);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("Error updating profile: ${e.toString()}"),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
+  }
 
-    await FirebaseFirestore.instance
-        .collection("users")
-        .doc(uid)
-        .update({
-      "name": nameCtrl.text.trim(),
-      "phone": phoneCtrl.text.trim(),
-      "preferredContact": preferredContact,
-      "avatarUrl": finalAvatarUrl,
-    });
-
-    setState(() {
-      saving = false;
-      editing = false;
-      avatarUrl = finalAvatarUrl;
-      newAvatar = null;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Profile updated successfully"),
-        backgroundColor: Colors.green,
-      ),
-    );
+  Widget _buildAvatar() {
+    if (kIsWeb) {
+      // Web: Show preview of new avatar or existing URL
+      if (newAvatar != null) {
+        return FutureBuilder<Uint8List>(
+          future: newAvatar!.readAsBytes(),
+          builder: (context, snapshot) {
+            if (snapshot.hasData) {
+              return CircleAvatar(
+                radius: 60,
+                backgroundImage: MemoryImage(snapshot.data!),
+              );
+            }
+            return CircleAvatar(
+              radius: 60,
+              backgroundColor: Colors.grey.shade300,
+              child: const CircularProgressIndicator(),
+            );
+          },
+        );
+      } else if (avatarUrl.isNotEmpty && avatarUrl.startsWith('http')) {
+        return CircleAvatar(
+          radius: 60,
+          backgroundImage: NetworkImage(avatarUrl),
+          backgroundColor: Colors.grey.shade300,
+        );
+      } else {
+        return CircleAvatar(
+          radius: 60,
+          backgroundColor: Colors.grey.shade300,
+          backgroundImage: const AssetImage("assets/default_avatar.jpg"),
+        );
+      }
+    } else {
+      // Mobile: Show local file or network image
+      if (newAvatar != null) {
+        return CircleAvatar(
+          radius: 60,
+          backgroundImage: FileImage(File(newAvatar!.path)),
+        );
+      } else if (avatarUrl.isNotEmpty) {
+        if (avatarUrl.startsWith('http')) {
+          return CircleAvatar(
+            radius: 60,
+            backgroundImage: NetworkImage(avatarUrl),
+            backgroundColor: Colors.grey.shade300,
+          );
+        } else if (File(avatarUrl).existsSync()) {
+          return CircleAvatar(
+            radius: 60,
+            backgroundImage: FileImage(File(avatarUrl)),
+          );
+        }
+      }
+      return CircleAvatar(
+        radius: 60,
+        backgroundColor: Colors.grey.shade300,
+        backgroundImage: const AssetImage("assets/default_avatar.jpg"),
+      );
+    }
   }
 
   @override
@@ -157,16 +222,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 onTap: editing ? pickAvatar : null,
                 child: Stack(
                   children: [
-                    CircleAvatar(
-                      radius: 60,
-                      backgroundColor: Colors.grey.shade300,
-                      backgroundImage: newAvatar != null
-                          ? FileImage(newAvatar!)
-                          : (avatarUrl.isNotEmpty && File(avatarUrl).existsSync()
-                              ? FileImage(File(avatarUrl))
-                              : const AssetImage("assets/default_avatar.jpg"))
-                          as ImageProvider,
-                    ),
+                    _buildAvatar(),
                     if (editing)
                       Positioned(
                         bottom: 0,
@@ -315,7 +371,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                     const SizedBox(height: 10),
                     DropdownButtonFormField<String>(
-                      initialValue: preferredContact,
+                      value: preferredContact,
                       decoration: InputDecoration(
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8),

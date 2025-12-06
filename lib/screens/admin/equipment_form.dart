@@ -37,6 +37,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
 
   int quantity = 1;
   bool loading = false;
+  String loadingMessage = "";
 
   XFile? selectedImage;
   String oldImagePath = "";
@@ -100,6 +101,92 @@ class _EquipmentFormState extends State<EquipmentForm> {
     setState(() {
       tags.remove(tag);
     });
+  }
+
+  Future<void> _saveEquipment() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      loading = true;
+      loadingMessage = "Preparing to save...";
+    });
+
+    try {
+      String finalImage = oldImagePath;
+      
+      if (selectedImage != null) {
+        setState(() => loadingMessage = "Uploading image...");
+        
+        try {
+          finalImage = await service.saveLocalImage(selectedImage!);
+          debugPrint('Image saved successfully: $finalImage');
+        } catch (e) {
+          setState(() => loading = false);
+          if (!mounted) return;
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text("Image upload failed: ${e.toString()}"),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+          return;
+        }
+      }
+
+      setState(() => loadingMessage = "Saving equipment...");
+
+      String equipmentStatus = "available";
+      if (widget.isFromDonation) {
+        equipmentStatus = "donated";
+      }
+
+      final eq = Equipment(
+        id: widget.equipment?.id ?? "",
+        name: nameCtrl.text.trim(),
+        type: selectedType!,
+        description: descCtrl.text.trim(),
+        imagePath: finalImage,
+        condition: selectedCondition!,
+        quantity: quantity,
+        status: equipmentStatus,
+        pricePerDay: double.parse(priceCtrl.text),
+        location: locationCtrl.text.trim(),
+        tags: tags,
+      );
+
+      if (widget.isFromDonation || widget.equipment == null) {
+        await service.addEquipment(eq);
+      } else {
+        await service.updateEquipment(eq, oldImagePath: oldImagePath);
+      }
+
+      setState(() => loading = false);
+      
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Equipment saved successfully!"),
+          backgroundColor: Colors.green,
+        ),
+      );
+      
+      Navigator.pop(context);
+    } catch (e) {
+      setState(() => loading = false);
+      
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error: ${e.toString()}"),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
   }
 
   @override
@@ -173,7 +260,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   const SizedBox(height: 15),
 
                   DropdownButtonFormField<String>(
-                    initialValue: selectedType,
+                    value: selectedType,
                     decoration: const InputDecoration(
                       labelText: "Type *",
                       border: OutlineInputBorder(),
@@ -200,7 +287,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   const SizedBox(height: 15),
 
                   DropdownButtonFormField<String>(
-                    initialValue: selectedCondition,
+                    value: selectedCondition,
                     decoration: const InputDecoration(
                       labelText: "Condition *",
                       border: OutlineInputBorder(),
@@ -347,7 +434,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   const SizedBox(height: 20),
 
                   const Text(
-                    "Equipment Image",
+                    "Equipment Image *",
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -415,49 +502,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () async {
-                        if (!_formKey.currentState!.validate()) return;
-
-                        setState(() => loading = true);
-
-                        String finalImage = oldImagePath;
-                        if (selectedImage != null) {
-                          finalImage =
-                              await service.saveLocalImage(selectedImage!);
-                        }
-
-                        String equipmentStatus = "available";
-                        if (widget.isFromDonation) {
-                          equipmentStatus = "donated";
-                        }
-
-                        final eq = Equipment(
-                          id: isEditing ? widget.equipment!.id : "",
-                          name: nameCtrl.text.trim(),
-                          type: selectedType!,
-                          description: descCtrl.text.trim(),
-                          imagePath: finalImage,
-                          condition: selectedCondition!,
-                          quantity: quantity,
-                          status: equipmentStatus,
-                          pricePerDay: double.parse(priceCtrl.text),
-                          location: locationCtrl.text.trim(),
-                          tags: tags,
-                        );
-
-                        if (widget.isFromDonation) {
-                          await service.addEquipment(eq);
-                        } else if (isEditing) {
-                          await service.updateEquipment(eq,
-                              oldImagePath: oldImagePath);
-                        } else {
-                          await service.addEquipment(eq);
-                        }
-
-                        setState(() => loading = false);
-                        if (!mounted) return;
-                        Navigator.pop(context);
-                      },
+                      onPressed: loading ? null : _saveEquipment,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.all(16),
                         backgroundColor: Colors.green,
@@ -480,9 +525,39 @@ class _EquipmentFormState extends State<EquipmentForm> {
 
         if (loading)
           Container(
-            color: Colors.black45,
-            child: const Center(
-              child: CircularProgressIndicator(color: Colors.white),
+            color: Colors.black54,
+            child: Center(
+              child: Card(
+                margin: const EdgeInsets.all(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(30),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(
+                        color: Colors.blue,
+                        strokeWidth: 4,
+                      ),
+                      const SizedBox(height: 20),
+                      Text(
+                        loadingMessage,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        "Please wait...",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
       ],
