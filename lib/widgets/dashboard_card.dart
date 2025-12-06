@@ -1,4 +1,3 @@
-// lib/widgets/dashboard_card.dart
 import 'package:flutter/material.dart';
 import '../constants/app_theme.dart';
 
@@ -145,7 +144,6 @@ class _DashboardCardState extends State<DashboardCard>
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    // Animated Icon Container
                                     TweenAnimationBuilder<double>(
                                       duration: const Duration(milliseconds: 300),
                                       tween: Tween(begin: 0.0, end: _isHovered ? 1.0 : 0.0),
@@ -184,7 +182,6 @@ class _DashboardCardState extends State<DashboardCard>
 
                                     const SizedBox(height: 16),
 
-                                    // Label
                                     Text(
                                       widget.label,
                                       textAlign: TextAlign.center,
@@ -203,7 +200,6 @@ class _DashboardCardState extends State<DashboardCard>
                         ),
                       ),
 
-                      // Badge
                       if (widget.showBadge && widget.badgeText != null)
                         Positioned(
                           top: 8,
@@ -246,7 +242,6 @@ class _DashboardCardState extends State<DashboardCard>
   }
 }
 
-// lib/widgets/info_card.dart
 class InfoCard extends StatelessWidget {
   final String title;
   final String value;
@@ -384,7 +379,6 @@ class InfoCard extends StatelessWidget {
   }
 }
 
-// lib/widgets/section_header.dart
 class SectionHeader extends StatelessWidget {
   final String title;
   final String? subtitle;

@@ -1,4 +1,3 @@
-// lib/auth/login_screen.dart - COMPLETE VERSION
 import 'package:flutter/material.dart';
 import '../constants/app_theme.dart';
 import 'auth_service.dart';
@@ -125,7 +124,6 @@ class _EnhancedLoginScreenState extends State<LoginScreen>
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  // App Logo
                   Hero(
                     tag: 'app_logo',
                     child: Container(
@@ -146,7 +144,6 @@ class _EnhancedLoginScreenState extends State<LoginScreen>
 
                   const SizedBox(height: 32),
 
-                  // App Title
                   ShaderMask(
                     shaderCallback: (bounds) =>
                         AppTheme.primaryGradient.createShader(bounds),
@@ -171,7 +168,6 @@ class _EnhancedLoginScreenState extends State<LoginScreen>
 
                   const SizedBox(height: 48),
 
-                  // Login Form
                   Container(
                     padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
@@ -181,7 +177,6 @@ class _EnhancedLoginScreenState extends State<LoginScreen>
                     ),
                     child: Column(
                       children: [
-                        // Email Field
                         TextField(
                           controller: emailCtrl,
                           keyboardType: TextInputType.emailAddress,
@@ -197,7 +192,6 @@ class _EnhancedLoginScreenState extends State<LoginScreen>
 
                         const SizedBox(height: 20),
 
-                        // Password Field
                         TextField(
                           controller: passCtrl,
                           obscureText: _obscurePassword,
@@ -225,7 +219,6 @@ class _EnhancedLoginScreenState extends State<LoginScreen>
 
                         const SizedBox(height: 32),
 
-                        // Login Button
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
@@ -258,7 +251,6 @@ class _EnhancedLoginScreenState extends State<LoginScreen>
 
                         const SizedBox(height: 16),
 
-                        // Register Link
                         TextButton(
                           onPressed: () {
                             Navigator.pushReplacement(
@@ -282,7 +274,6 @@ class _EnhancedLoginScreenState extends State<LoginScreen>
 
                   const SizedBox(height: 32),
 
-                  // Divider
                   Row(
                     children: [
                       Expanded(
@@ -309,7 +300,6 @@ class _EnhancedLoginScreenState extends State<LoginScreen>
 
                   const SizedBox(height: 32),
 
-                  // Guest Button
                   SizedBox(
                     width: double.infinity,
                     child: OutlinedButton(
@@ -342,7 +332,6 @@ class _EnhancedLoginScreenState extends State<LoginScreen>
 
                   const SizedBox(height: 16),
 
-                  // Guest Info
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(

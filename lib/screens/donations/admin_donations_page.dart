@@ -49,7 +49,6 @@ class AdminDonationsPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // ITEM INFO
                       Text(
                         d.itemName,
                         style: const TextStyle(
@@ -61,7 +60,6 @@ class AdminDonationsPage extends StatelessWidget {
 
                       const SizedBox(height: 6),
 
-                      // DONOR INFO - FIXED FOR GUESTS
                       FutureBuilder<DocumentSnapshot>(
                         future: FirebaseFirestore.instance
                             .collection("donations")
@@ -77,11 +75,9 @@ class AdminDonationsPage extends StatelessWidget {
 
                           final donationData = donationSnap.data!.data() as Map<String, dynamic>?;
                           
-                          // Check if this is a guest donation
                           final isGuest = donationData?["isGuest"] ?? false;
                           
                           if (isGuest) {
-                            // For guest donations, use the stored donor info
                             final guestName = donationData?["donorName"] ?? "Guest";
                             final guestEmail = donationData?["donorEmail"] ?? "guest@example.com";
                             final guestPhone = donationData?["donorPhone"] ?? "N/A";
@@ -141,7 +137,6 @@ class AdminDonationsPage extends StatelessWidget {
                               ],
                             );
                           } else {
-                            // For registered user donations, fetch from users collection
                             return FutureBuilder<DocumentSnapshot>(
                               future: FirebaseFirestore.instance
                                   .collection("users")
@@ -200,7 +195,6 @@ class AdminDonationsPage extends StatelessWidget {
                         },
                       ),
 
-                      // IMAGE
                       if (d.imagePath.isNotEmpty && File(d.imagePath).existsSync())
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
@@ -224,22 +218,18 @@ class AdminDonationsPage extends StatelessWidget {
 
                       const SizedBox(height: 10),
 
-                      // STATUS BADGE
                       _statusBadge(d.status),
 
                       const SizedBox(height: 10),
 
-                      // ACTION BUTTONS
                       if (d.status == "pending")
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            // Reject button
                             TextButton(
                               onPressed: () async {
                                 await donationService.rejectDonation(d.id);
 
-                                // SEND NOTIFICATION TO DONOR (IF NOT GUEST)
                                 if (d.userId != "guest_user") {
                                   await notificationService.createNotification(
                                     userId: d.userId,
@@ -265,12 +255,10 @@ class AdminDonationsPage extends StatelessWidget {
 
                             const SizedBox(width: 12),
 
-                            // Accept button
                             ElevatedButton(
                               onPressed: () async {
                                 await donationService.approveDonation(d.id);
 
-                                // SEND NOTIFICATION TO DONOR (IF NOT GUEST)
                                 if (d.userId != "guest_user") {
                                   await notificationService.createNotification(
                                     userId: d.userId,
@@ -281,7 +269,6 @@ class AdminDonationsPage extends StatelessWidget {
                                   );
                                 }
 
-                                // Convert donation → Equipment
                                 final equipment = Equipment(
                                   id: "",
                                   name: d.itemName,
@@ -290,7 +277,7 @@ class AdminDonationsPage extends StatelessWidget {
                                   imagePath: d.imagePath,
                                   condition: d.condition,
                                   quantity: d.quantity,
-                                  status: "donated", // AUTOMATICALLY SET TO "donated"
+                                  status: "donated", 
                                   pricePerDay: 0,
                                 );
 

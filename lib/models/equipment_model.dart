@@ -8,8 +8,8 @@ class Equipment {
   int quantity;
   String status;
   double pricePerDay;
-  String location; // NEW: Physical location of equipment
-  List<String> tags; // NEW: Tags for categorization
+  String location; 
+  List<String> tags;
 
   Equipment({
     required this.id,

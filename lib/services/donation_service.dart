@@ -6,7 +6,6 @@ class DonationService {
   final db = FirebaseFirestore.instance;
   final notificationService = NotificationService();
 
-  // Submit new donation
   Future<void> submitDonation({
     required String userId,
     required String itemName,
@@ -28,15 +27,12 @@ class DonationService {
       "createdAt": Timestamp.now(),
     });
 
-    // Get donor name
     final userDoc = await db.collection("users").doc(userId).get();
     final donorName = userDoc.data()?["name"] ?? "A user";
 
-    // Notify admins about new donation
     await notificationService.notifyAdminAboutDonation(donorName, itemName);
   }
 
-  // Stream for admin dashboard
   Stream<List<Donation>> getAllDonations() {
     return db
         .collection("donations")
@@ -46,7 +42,6 @@ class DonationService {
             snap.docs.map((d) => Donation.fromMap(d.data(), d.id)).toList());
   }
 
-  // Admin actions
   Future<void> approveDonation(String id) async {
     await db.collection("donations").doc(id).update({"status": "approved"});
   }

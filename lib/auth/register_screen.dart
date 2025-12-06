@@ -44,16 +44,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
         SnackBar(content: Text(error)),
       );
     } else {
-      // After successful registration, navigate based on role
       if (role == "admin") {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const AdminHome()),  // Redirect to Admin Home
+          MaterialPageRoute(builder: (_) => const AdminHome()),  
         );
       } else {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const RenterHome()),  // Redirect to Renter Home
+          MaterialPageRoute(builder: (_) => const RenterHome()),  
         );
       }
     }
@@ -69,7 +68,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           key: _formKey,
           child: Column(
             children: [
-              // Logo
               Container(
                 width: 100,
                 height: 100,
@@ -89,7 +87,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               const SizedBox(height: 32),
 
-              // Title
               Text(
                 "Create your account",
                 style: TextStyle(
@@ -101,7 +98,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               const SizedBox(height: 20),
 
-              // Name Field
               TextFormField(
                 controller: nameCtrl,
                 decoration: const InputDecoration(
@@ -114,7 +110,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               const SizedBox(height: 20),
 
-              // Email Field
               TextFormField(
                 controller: emailCtrl,
                 decoration: const InputDecoration(
@@ -128,7 +123,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               const SizedBox(height: 20),
 
-              // Phone Field
               TextFormField(
                 controller: phoneCtrl,
                 keyboardType: TextInputType.number,
@@ -146,7 +140,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               const SizedBox(height: 20),
 
-              // Password Field
               TextFormField(
                 controller: passCtrl,
                 obscureText: true,
@@ -161,7 +154,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               const SizedBox(height: 20),
 
-              // Role Dropdown
               DropdownButtonFormField<String>(
                 initialValue: role,
                 onChanged: (newRole) => setState(() => role = newRole!),
@@ -177,7 +169,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               const SizedBox(height: 20),
 
-              // Register Button
               ElevatedButton(
                 onPressed: loading ? null : _register,
                 child: loading
@@ -191,7 +182,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               const SizedBox(height: 16),
 
-              // Login Link
               TextButton(
                 onPressed: () {
                   Navigator.pushReplacement(

@@ -1,4 +1,3 @@
-// lib/screens/admin/enhanced_admin_home.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -44,7 +43,6 @@ class _EnhancedAdminHomeState extends State<AdminHome> {
       });
     }
 
-    // Load statistics
     final equipmentSnapshot =
         await FirebaseFirestore.instance.collection("equipment").get();
     final reservationsSnapshot = await FirebaseFirestore.instance
@@ -92,14 +90,12 @@ class _EnhancedAdminHomeState extends State<AdminHome> {
         child: SafeArea(
           child: CustomScrollView(
             slivers: [
-              // Custom App Bar
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header
                       SlideInAnimation(
                         delay: 0,
                         child: Row(
@@ -145,7 +141,6 @@ class _EnhancedAdminHomeState extends State<AdminHome> {
 
                       const SizedBox(height: 24),
 
-                      // Section Header
                       SlideInAnimation(
                         delay: 400,
                         child: const SectionHeader(
@@ -159,7 +154,6 @@ class _EnhancedAdminHomeState extends State<AdminHome> {
                 ),
               ),
 
-              // Dashboard Grid
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 sliver: SliverGrid(

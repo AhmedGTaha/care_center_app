@@ -1,4 +1,3 @@
-// lib/screens/renter/renter_home.dart - FIXED VERSION
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -45,7 +44,6 @@ class _RenterHomeState extends State<RenterHome> {
       });
     }
 
-    // Load statistics
     final reservationsSnapshot = await FirebaseFirestore.instance
         .collection("reservations")
         .where("userId", isEqualTo: uid)
@@ -94,14 +92,12 @@ class _RenterHomeState extends State<RenterHome> {
         child: SafeArea(
           child: CustomScrollView(
             slivers: [
-              // Custom App Bar
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Header
                       SlideInAnimation(
                         delay: 0,
                         child: Row(
@@ -129,7 +125,6 @@ class _RenterHomeState extends State<RenterHome> {
                             ),
                             Row(
                               children: [
-                                // Notification Bell
                                 StreamBuilder<int>(
                                   stream: notificationService.getUnreadCount(uid),
                                   builder: (context, snapshot) {
@@ -213,7 +208,6 @@ class _RenterHomeState extends State<RenterHome> {
 
                       const SizedBox(height: 24),
 
-                      // Section Header
                       SlideInAnimation(
                         delay: 200,
                         child: Row(
@@ -252,7 +246,6 @@ class _RenterHomeState extends State<RenterHome> {
                 ),
               ),
 
-              // Dashboard Grid
               SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 sliver: SliverGrid(

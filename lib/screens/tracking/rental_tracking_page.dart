@@ -211,7 +211,6 @@ class RentalTrackingPage extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
-                // Total Cost
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [

@@ -107,7 +107,6 @@ class _DonationPageState extends State<DonationPage> {
           child: Column(
             children: [
               
-              // Image Picker
               const SizedBox(height: 10),
               GestureDetector(
                 onTap: pickImage,
@@ -144,7 +143,6 @@ class _DonationPageState extends State<DonationPage> {
 
               const SizedBox(height: 20),
 
-              // Item Name
               TextFormField(
                 controller: itemCtrl,
                 decoration: const InputDecoration(
@@ -158,7 +156,6 @@ class _DonationPageState extends State<DonationPage> {
 
               const SizedBox(height: 15),
 
-              // Type Dropdown
               DropdownButtonFormField(
                 decoration: const InputDecoration(
                   labelText: "Type *",
@@ -190,7 +187,6 @@ class _DonationPageState extends State<DonationPage> {
 
               const SizedBox(height: 15),
 
-              // Condition Dropdown
               DropdownButtonFormField(
                 decoration: const InputDecoration(
                   labelText: "Condition *",
@@ -210,7 +206,6 @@ class _DonationPageState extends State<DonationPage> {
 
               const SizedBox(height: 15),
 
-              // Quantity
               Row(
                 children: [
                   const Text("Quantity *",
@@ -249,7 +244,6 @@ class _DonationPageState extends State<DonationPage> {
 
               const SizedBox(height: 15),
 
-              // Description
               TextFormField(
                 controller: descCtrl,
                 decoration: const InputDecoration(
@@ -264,7 +258,6 @@ class _DonationPageState extends State<DonationPage> {
 
               const SizedBox(height: 25),
 
-              // Submit Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(

@@ -79,7 +79,6 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
 
   List<Equipment> _applyFilters(List<Equipment> items) {
     return items.where((eq) {
-      // Search filter
       if (searchQuery.isNotEmpty) {
         final query = searchQuery.toLowerCase();
         if (!eq.name.toLowerCase().contains(query) &&
@@ -89,22 +88,18 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
         }
       }
 
-      // Type filter
       if (selectedType != "All" && eq.type != selectedType) {
         return false;
       }
 
-      // Status filter
       if (selectedStatus != "All" && eq.status != selectedStatus) {
         return false;
       }
 
-      // Available only filter
       if (showAvailableOnly && eq.quantity <= 0) {
         return false;
       }
 
-      // Donated only filter (price = 0 means donated)
       if (showDonatedOnly && eq.pricePerDay > 0) {
         return false;
       }
@@ -133,7 +128,6 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
       ),
       body: Column(
         children: [
-          // Search Bar
           Padding(
             padding: const EdgeInsets.all(12),
             child: TextField(
@@ -162,7 +156,6 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
             ),
           ),
 
-          // Filters Section
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             color: Colors.grey.shade100,
@@ -190,7 +183,6 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
                 ),
                 const SizedBox(height: 8),
 
-                // Type Dropdown
                 Row(
                   children: [
                     const Text("Type: "),
@@ -215,7 +207,6 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
 
                 const SizedBox(height: 8),
 
-                // Status Dropdown
                 Row(
                   children: [
                     const Text("Status: "),
@@ -258,7 +249,6 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
             ),
           ),
 
-          // Equipment List
           Expanded(
             child: StreamBuilder<List<Equipment>>(
               stream: service.getEquipmentStream(),
@@ -331,7 +321,6 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
                           padding: const EdgeInsets.all(12),
                           child: Row(
                             children: [
-                              // Image
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
                                 child: invalid
@@ -351,7 +340,6 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
 
                               const SizedBox(width: 12),
 
-                              // Details
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -394,7 +382,6 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
                                       spacing: 6,
                                       runSpacing: 6,
                                       children: [
-                                        // Price/Donated Badge
                                         Container(
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 8,
@@ -427,7 +414,6 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
                                           ),
                                         ),
 
-                                        // Status Badge
                                         Container(
                                           padding: const EdgeInsets.symmetric(
                                             horizontal: 8,
@@ -464,7 +450,6 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
                                           ),
                                         ),
 
-                                        // Availability Badge
                                         if (isAvailable)
                                           Container(
                                             padding: const EdgeInsets.symmetric(
@@ -502,7 +487,6 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
                                 ),
                               ),
 
-                              // Arrow Icon
                               const Icon(
                                 Icons.arrow_forward_ios,
                                 size: 18,

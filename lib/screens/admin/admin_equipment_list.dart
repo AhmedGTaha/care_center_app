@@ -58,7 +58,6 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
 
   List<Equipment> _applyFilters(List<Equipment> items) {
     return items.where((eq) {
-      // Search filter
       if (searchQuery.isNotEmpty) {
         final query = searchQuery.toLowerCase();
         if (!eq.name.toLowerCase().contains(query) &&
@@ -70,22 +69,18 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
         }
       }
 
-      // Type filter
       if (selectedType != "All" && eq.type != selectedType) {
         return false;
       }
 
-      // Status filter
       if (selectedStatus != "All" && eq.status != selectedStatus) {
         return false;
       }
 
-      // Location filter
       if (selectedLocation != "All" && eq.location != selectedLocation) {
         return false;
       }
 
-      // Available only filter
       if (showAvailableOnly && eq.quantity <= 0) {
         return false;
       }
@@ -153,7 +148,6 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
       ),
       body: Column(
         children: [
-          // Search Bar
           Padding(
             padding: const EdgeInsets.all(12),
             child: TextField(
@@ -182,7 +176,6 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
             ),
           ),
 
-          // Filters Section
           StreamBuilder<List<Equipment>>(
             stream: service.getEquipmentStream(),
             builder: (context, snapshot) {
@@ -216,7 +209,6 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
                     ),
                     const SizedBox(height: 8),
 
-                    // Type Dropdown
                     Row(
                       children: [
                         const Text("Type: "),
@@ -241,7 +233,6 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
 
                     const SizedBox(height: 8),
 
-                    // Status Dropdown
                     Row(
                       children: [
                         const Text("Status: "),
@@ -283,7 +274,6 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
 
                     const SizedBox(height: 8),
 
-                    // Location Dropdown
                     Row(
                       children: [
                         const Text("Location: "),
@@ -313,7 +303,6 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
             },
           ),
 
-          // Equipment List
           Expanded(
             child: StreamBuilder<List<Equipment>>(
               stream: service.getEquipmentStream(),
@@ -380,7 +369,6 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
                           padding: const EdgeInsets.all(12),
                           child: Row(
                             children: [
-                              // Image
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
                                 child: missing(eq.imagePath)
@@ -391,7 +379,6 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
                               ),
                               const SizedBox(width: 12),
 
-                              // Details
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -467,7 +454,6 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
                                       ),
                                     ],
                                     const SizedBox(height: 6),
-                                    // Status Badge
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 8,
@@ -506,7 +492,6 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
                                 ),
                               ),
 
-                              // Arrow Icon
                               const Icon(
                                 Icons.arrow_forward_ios,
                                 size: 18,

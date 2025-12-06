@@ -111,7 +111,6 @@ class _ReportsPageState extends State<ReportsPage> {
         .where("status", isEqualTo: "approved")
         .get();
 
-    // Count rentals per equipment
     Map<String, Map<String, dynamic>> rentalCount = {};
     
     for (var doc in snapshot.docs) {
@@ -129,7 +128,6 @@ class _ReportsPageState extends State<ReportsPage> {
       }
     }
 
-    // Convert to list and sort
     mostRentedEquipment = rentalCount.entries
         .map((e) => {
               "name": e.value["name"],
@@ -139,7 +137,6 @@ class _ReportsPageState extends State<ReportsPage> {
     
     mostRentedEquipment.sort((a, b) => b["count"].compareTo(a["count"]));
     
-    // Keep top 10
     if (mostRentedEquipment.length > 10) {
       mostRentedEquipment = mostRentedEquipment.sublist(0, 10);
     }
@@ -150,7 +147,6 @@ class _ReportsPageState extends State<ReportsPage> {
         .collection("donations")
         .get();
 
-    // Count donations per type
     Map<String, int> donationCount = {};
     
     for (var doc in snapshot.docs) {
@@ -158,7 +154,6 @@ class _ReportsPageState extends State<ReportsPage> {
       donationCount[type] = (donationCount[type] ?? 0) + 1;
     }
 
-    // Convert to list and sort
     mostDonatedTypes = donationCount.entries
         .map((e) => {
               "type": e.key,
@@ -248,55 +243,46 @@ class _ReportsPageState extends State<ReportsPage> {
         child: ListView(
           padding: const EdgeInsets.all(15),
           children: [
-            // Overview Section
             _buildSectionTitle("Overview"),
             _buildOverviewCards(),
             
             const SizedBox(height: 20),
             
-            // Equipment Statistics
             _buildSectionTitle("Equipment Statistics"),
             _buildEquipmentStats(),
             
             const SizedBox(height: 20),
             
-            // Rental Analytics
             _buildSectionTitle("Rental Analytics"),
             _buildReservationStats(),
             
             const SizedBox(height: 20),
             
-            // Most Rented Equipment
             _buildSectionTitle("Most Frequently Rented Equipment"),
             _buildMostRentedList(),
             
             const SizedBox(height: 20),
             
-            // Donation Statistics
             _buildSectionTitle("Donation Statistics"),
             _buildDonationStats(),
             
             const SizedBox(height: 20),
             
-            // Most Donated Types
             _buildSectionTitle("Most Donated Equipment Types"),
             _buildMostDonatedList(),
             
             const SizedBox(height: 20),
             
-            // Overdue Rentals
             _buildSectionTitle("Overdue Rentals"),
             _buildOverdueSection(),
             
             const SizedBox(height: 20),
             
-            // Maintenance Records
             _buildSectionTitle("Equipment in Maintenance"),
             _buildMaintenanceSection(),
             
             const SizedBox(height: 20),
             
-            // Insights Section
             _buildSectionTitle("Insights & Recommendations"),
             _buildInsights(),
           ],
@@ -695,7 +681,6 @@ class _ReportsPageState extends State<ReportsPage> {
   Widget _buildInsights() {
     List<Map<String, dynamic>> insights = [];
 
-    // Generate insights
     if (overdueRentals > 0) {
       insights.add({
         "icon": Icons.warning,

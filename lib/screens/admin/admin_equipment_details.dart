@@ -38,7 +38,6 @@ class _AdminEquipmentDetailsState extends State<AdminEquipmentDetails> {
           .doc(widget.eq.id)
           .update({"status": newStatus});
 
-      // SEND NOTIFICATION TO ADMINS WHEN STATUS CHANGES TO MAINTENANCE
       if (newStatus == "maintenance") {
         await notificationService.notifyMaintenanceNeeded(
           widget.eq.id,
@@ -182,7 +181,6 @@ class _AdminEquipmentDetailsState extends State<AdminEquipmentDetails> {
 
                   const SizedBox(height: 20),
 
-                  // Equipment Name
                   Text(
                     widget.eq.name,
                     style: const TextStyle(
@@ -193,7 +191,6 @@ class _AdminEquipmentDetailsState extends State<AdminEquipmentDetails> {
 
                   const SizedBox(height: 10),
 
-                  // Type Badge
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
@@ -213,7 +210,6 @@ class _AdminEquipmentDetailsState extends State<AdminEquipmentDetails> {
 
                   const SizedBox(height: 15),
 
-                  // Tags Display
                   if (widget.eq.tags.isNotEmpty)
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -241,7 +237,6 @@ class _AdminEquipmentDetailsState extends State<AdminEquipmentDetails> {
                       ],
                     ),
 
-                  // Description
                   const Text(
                     "Description",
                     style: TextStyle(
@@ -259,7 +254,6 @@ class _AdminEquipmentDetailsState extends State<AdminEquipmentDetails> {
 
                   const SizedBox(height: 20),
 
-                  // Details Card
                   Card(
                     elevation: 2,
                     child: Padding(
@@ -300,7 +294,6 @@ class _AdminEquipmentDetailsState extends State<AdminEquipmentDetails> {
 
                   const SizedBox(height: 20),
 
-                  // Status Management Section
                   Container(
                     padding: const EdgeInsets.all(15),
                     decoration: BoxDecoration(
@@ -439,7 +432,6 @@ class _AdminEquipmentDetailsState extends State<AdminEquipmentDetails> {
 
                   const SizedBox(height: 25),
 
-                  // Action Buttons
                   Row(
                     children: [
                       Expanded(

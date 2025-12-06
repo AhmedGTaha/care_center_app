@@ -1,4 +1,3 @@
-// lib/widgets/animated_card.dart
 import 'package:flutter/material.dart';
 import '../constants/app_theme.dart';
 
@@ -102,7 +101,6 @@ class _AnimatedCardState extends State<AnimatedCard>
   }
 }
 
-// lib/widgets/status_badge.dart
 class StatusBadge extends StatelessWidget {
   final String status;
   final bool isLarge;
@@ -211,7 +209,6 @@ class StatusBadge extends StatelessWidget {
   }
 }
 
-// lib/widgets/shimmer_loading.dart
 class ShimmerLoading extends StatefulWidget {
   final double width;
   final double height;
@@ -278,7 +275,6 @@ class _ShimmerLoadingState extends State<ShimmerLoading>
   }
 }
 
-// lib/widgets/animated_counter.dart
 class AnimatedCounter extends StatelessWidget {
   final int value;
   final TextStyle? textStyle;
@@ -306,7 +302,6 @@ class AnimatedCounter extends StatelessWidget {
   }
 }
 
-// lib/widgets/gradient_icon.dart
 class GradientIcon extends StatelessWidget {
   final IconData icon;
   final double size;
@@ -332,7 +327,6 @@ class GradientIcon extends StatelessWidget {
   }
 }
 
-// lib/widgets/animated_progress_bar.dart
 class AnimatedProgressBar extends StatelessWidget {
   final double progress;
   final Color? color;
@@ -388,7 +382,6 @@ class AnimatedProgressBar extends StatelessWidget {
   }
 }
 
-// lib/widgets/slide_in_animation.dart
 class SlideInAnimation extends StatelessWidget {
   final Widget child;
   final int delay;

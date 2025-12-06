@@ -2,13 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class NotificationService {
   final db = FirebaseFirestore.instance;
-
-  // Create a notification
+  
   Future<void> createNotification({
     required String userId,
     required String title,
     required String message,
-    required String type, // 'rental_reminder', 'overdue', 'donation', 'maintenance'
+    required String type, 
     String? reservationId,
     String? equipmentId,
   }) async {
@@ -23,8 +22,7 @@ class NotificationService {
       "createdAt": Timestamp.now(),
     });
   }
-
-  // Get user notifications
+  
   Stream<QuerySnapshot> getUserNotifications(String userId) {
     return db
         .collection("notifications")
@@ -32,8 +30,7 @@ class NotificationService {
         .limit(50)
         .snapshots();
   }
-
-  // Get admin notifications
+  
   Stream<QuerySnapshot> getAdminNotifications() {
     return db
         .collection("notifications")
@@ -42,14 +39,12 @@ class NotificationService {
         .snapshots();
   }
 
-  // Mark notification as read
   Future<void> markAsRead(String notificationId) async {
     await db.collection("notifications").doc(notificationId).update({
       "isRead": true,
     });
   }
 
-  // Mark all notifications as read for a user
   Future<void> markAllAsRead(String userId) async {
     final notifications = await db
         .collection("notifications")
@@ -62,7 +57,6 @@ class NotificationService {
     }
   }
 
-  // Get unread count
   Stream<int> getUnreadCount(String userId) {
     return db
         .collection("notifications")
@@ -72,7 +66,6 @@ class NotificationService {
         .map((snapshot) => snapshot.docs.length);
   }
 
-  // Check for overdue rentals and send notifications
   Future<void> checkOverdueRentals() async {
     final now = DateTime.now();
 
@@ -90,7 +83,6 @@ class NotificationService {
 
       final daysRemaining = endDate.difference(now).inDays;
 
-      // Notify 2 days before due
       if (daysRemaining == 2) {
         await createNotification(
           userId: userId,
@@ -101,7 +93,6 @@ class NotificationService {
         );
       }
 
-      // Notify if overdue
       if (daysRemaining < 0) {
         await createNotification(
           userId: userId,
@@ -114,9 +105,7 @@ class NotificationService {
     }
   }
 
-  // Notify admin about new donation
   Future<void> notifyAdminAboutDonation(String donorName, String itemName) async {
-    // Get all admin users
     final admins = await db
         .collection("users")
         .where("role", isEqualTo: "admin")
@@ -132,7 +121,6 @@ class NotificationService {
     }
   }
 
-  // Notify admin about equipment needing maintenance
   Future<void> notifyMaintenanceNeeded(String equipmentId, String equipmentName) async {
     final admins = await db
         .collection("users")

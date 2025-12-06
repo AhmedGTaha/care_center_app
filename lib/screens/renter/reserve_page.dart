@@ -9,10 +9,10 @@ class ReservePage extends StatefulWidget {
   const ReservePage({super.key, required this.eq});
 
   @override
-  State<ReservePage> createState() => _ReservePageState();
+  State<ReservePage> createState() => _ReservePageEnhancedState();
 }
 
-class _ReservePageState extends State<ReservePage> {
+class _ReservePageEnhancedState extends State<ReservePage> {
   DateTime? startDate;
   DateTime? endDate;
   bool loading = false;
@@ -21,14 +21,93 @@ class _ReservePageState extends State<ReservePage> {
   int availableQuantity = 0;
   double totalCost = 0.0;
   int rentalDays = 0;
+  
+  int suggestedDays = 7;
+  int minDays = 1;
+  int maxDays = 30;
+  bool isTrustedUser = false;
+  int userRentalHistory = 0;
 
   @override
   void initState() {
     super.initState();
     _checkCurrentAvailability();
+    _loadUserHistory();
+    _calculateSuggestedDuration();
   }
 
-  // Check current availability
+  Future<void> _loadUserHistory() async {
+    try {
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+      
+      final snapshot = await FirebaseFirestore.instance
+          .collection("reservations")
+          .where("userId", isEqualTo: uid)
+          .where("status", isEqualTo: "approved")
+          .where("lifecycleStatus", isEqualTo: "Returned")
+          .get();
+
+      setState(() {
+        userRentalHistory = snapshot.docs.length;
+        isTrustedUser = userRentalHistory >= 3;
+      });
+
+      _calculateSuggestedDuration();
+    } catch (e) {
+      debugPrint("Error loading user history: $e");
+    }
+  }
+
+  void _calculateSuggestedDuration() {
+    switch (widget.eq.type) {
+      case "Wheelchair":
+        suggestedDays = 14;
+        minDays = 3;
+        maxDays = 30;
+        break;
+      case "Walker":
+        suggestedDays = 21;
+        minDays = 7;
+        maxDays = 60;
+        break;
+      case "Crutches":
+        suggestedDays = 10;
+        minDays = 3;
+        maxDays = 30;
+        break;
+      case "Hospital Bed":
+        suggestedDays = 30;
+        minDays = 7;
+        maxDays = 90;
+        break;
+      case "Oxygen Machine":
+        suggestedDays = 30;
+        minDays = 14;
+        maxDays = 90;
+        break;
+      default:
+        suggestedDays = 7;
+        minDays = 1;
+        maxDays = 30;
+    }
+
+    if (isTrustedUser) {
+      maxDays = (maxDays * 1.5).toInt();
+      debugPrint("Trusted user detected. Extended max duration to $maxDays days");
+    }
+
+    setState(() {});
+  }
+
+  void _autoSuggestEndDate() {
+    if (startDate != null) {
+      setState(() {
+        endDate = startDate!.add(Duration(days: suggestedDays));
+        _calculateDuration();
+      });
+    }
+  }
+
   Future<void> _checkCurrentAvailability() async {
     setState(() => checkingAvailability = true);
 
@@ -45,34 +124,34 @@ class _ReservePageState extends State<ReservePage> {
           isAvailable = qty > 0;
           checkingAvailability = false;
         });
-      } else {
-        setState(() {
-          checkingAvailability = false;
-          isAvailable = false;
-        });
       }
     } catch (e) {
-      debugPrint("Error checking availability: $e");
       setState(() {
         checkingAvailability = false;
         isAvailable = false;
       });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Error checking availability: ${e.toString()}"),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
     }
   }
 
-  // Calculate rental duration
   void _calculateDuration() {
     if (startDate != null && endDate != null) {
       final days = endDate!.difference(startDate!).inDays + 1;
+      
+      if (days < minDays || days > maxDays) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              "Rental duration must be between $minDays and $maxDays days"
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        
+        endDate = startDate!.add(Duration(days: suggestedDays));
+        _calculateDuration();
+        return;
+      }
+      
       setState(() {
         rentalDays = days;
         totalCost = days * widget.eq.pricePerDay;
@@ -92,13 +171,11 @@ class _ReservePageState extends State<ReservePage> {
     if (picked != null) {
       setState(() {
         startDate = picked;
-
-        // Reset end date if it is before start date
-        if (endDate != null && endDate!.isBefore(startDate!)) {
-          endDate = null;
-        }
-        _calculateDuration();
+        // Reset end date
+        endDate = null;
       });
+      
+      _autoSuggestEndDate();
     }
   }
 
@@ -112,9 +189,9 @@ class _ReservePageState extends State<ReservePage> {
 
     final picked = await showDatePicker(
       context: context,
-      initialDate: startDate!,
-      firstDate: startDate!,
-      lastDate: DateTime(2030),
+      initialDate: endDate ?? startDate!.add(Duration(days: suggestedDays)),
+      firstDate: startDate!.add(Duration(days: minDays - 1)),
+      lastDate: startDate!.add(Duration(days: maxDays)),
       helpText: "Select End Date",
     );
 
@@ -126,7 +203,19 @@ class _ReservePageState extends State<ReservePage> {
     }
   }
 
-  // Check availability for selected date range
+  void _selectQuickDuration(int days) {
+    if (startDate != null) {
+      setState(() {
+        endDate = startDate!.add(Duration(days: days));
+        _calculateDuration();
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select start date first")),
+      );
+    }
+  }
+
   Future<bool> _checkDateAvailability() async {
     if (startDate == null || endDate == null) return false;
 
@@ -144,7 +233,6 @@ class _ReservePageState extends State<ReservePage> {
         final resStart = (data["startDate"] as Timestamp).toDate();
         final resEnd = (data["endDate"] as Timestamp).toDate();
 
-        // Check if dates overlap
         if (!(endDate!.isBefore(resStart) || startDate!.isAfter(resEnd))) {
           reservedCount++;
         }
@@ -152,17 +240,6 @@ class _ReservePageState extends State<ReservePage> {
 
       return (availableQuantity - reservedCount) > 0;
     } catch (e) {
-      debugPrint("Error checking date availability: $e");
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Error checking availability: ${e.toString()}"),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-
       return false;
     }
   }
@@ -171,13 +248,6 @@ class _ReservePageState extends State<ReservePage> {
     if (startDate == null || endDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Select both dates")),
-      );
-      return;
-    }
-
-    if (endDate!.isBefore(startDate!)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("End date cannot be before start date")),
       );
       return;
     }
@@ -200,7 +270,6 @@ class _ReservePageState extends State<ReservePage> {
 
       final uid = FirebaseAuth.instance.currentUser!.uid;
 
-      // Save reservation
       await FirebaseFirestore.instance.collection("reservations").add({
         "equipmentId": widget.eq.id,
         "equipmentName": widget.eq.name,
@@ -225,20 +294,13 @@ class _ReservePageState extends State<ReservePage> {
             backgroundColor: Colors.green,
           ),
         );
-
         Navigator.pop(context);
       }
     } catch (e) {
       setState(() => loading = false);
-
-      debugPrint("Error submitting reservation: $e");
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Error: ${e.toString()}"),
-            backgroundColor: Colors.red,
-          ),
+          SnackBar(content: Text("Error: ${e.toString()}")),
         );
       }
     }
@@ -258,7 +320,6 @@ class _ReservePageState extends State<ReservePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Equipment Info Card
                   Card(
                     elevation: 3,
                     child: Padding(
@@ -291,7 +352,34 @@ class _ReservePageState extends State<ReservePage> {
 
                   const SizedBox(height: 20),
 
-                  // Availability Status
+                  if (isTrustedUser)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.green, width: 2),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.verified, color: Colors.green),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              "✨ Trusted User: You have $userRentalHistory completed rentals. Extended rental period available!",
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                  const SizedBox(height: 20),
+
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
@@ -307,9 +395,7 @@ class _ReservePageState extends State<ReservePage> {
                     child: Row(
                       children: [
                         Icon(
-                          isAvailable
-                              ? Icons.check_circle
-                              : Icons.cancel,
+                          isAvailable ? Icons.check_circle : Icons.cancel,
                           color: isAvailable ? Colors.green : Colors.red,
                         ),
                         const SizedBox(width: 10),
@@ -329,7 +415,48 @@ class _ReservePageState extends State<ReservePage> {
 
                   const SizedBox(height: 25),
 
-                  // Date Selection Section
+                  Container(
+                    padding: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue, width: 2),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.blue),
+                            SizedBox(width: 10),
+                            Text(
+                              "Rental Period Guidelines",
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        Text(
+                          "• Suggested duration: $suggestedDays days",
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        Text(
+                          "• Minimum: $minDays days",
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        Text(
+                          "• Maximum: $maxDays days",
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 25),
+
                   const Text(
                     "Select Rental Period",
                     style: TextStyle(
@@ -339,7 +466,6 @@ class _ReservePageState extends State<ReservePage> {
                   ),
                   const SizedBox(height: 15),
 
-                  // START DATE BUTTON
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -358,7 +484,46 @@ class _ReservePageState extends State<ReservePage> {
 
                   const SizedBox(height: 10),
 
-                  // END DATE BUTTON
+                  if (startDate != null) ...[
+                    const Text(
+                      "Quick Select Duration:",
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: [
+                        if (suggestedDays >= minDays && suggestedDays <= maxDays)
+                          ElevatedButton(
+                            onPressed: () => _selectQuickDuration(suggestedDays),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                            ),
+                            child: Text("$suggestedDays days (Suggested)"),
+                          ),
+                        if (7 >= minDays && 7 <= maxDays)
+                          OutlinedButton(
+                            onPressed: () => _selectQuickDuration(7),
+                            child: const Text("7 days"),
+                          ),
+                        if (14 >= minDays && 14 <= maxDays)
+                          OutlinedButton(
+                            onPressed: () => _selectQuickDuration(14),
+                            child: const Text("14 days"),
+                          ),
+                        if (30 >= minDays && 30 <= maxDays)
+                          OutlinedButton(
+                            onPressed: () => _selectQuickDuration(30),
+                            child: const Text("30 days"),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
@@ -366,7 +531,7 @@ class _ReservePageState extends State<ReservePage> {
                       icon: const Icon(Icons.event),
                       label: Text(
                         endDate == null
-                            ? "Pick End Date"
+                            ? "Pick End Date (or use quick select)"
                             : "End: ${endDate!.toString().split(' ')[0]}",
                       ),
                       style: ElevatedButton.styleFrom(
@@ -377,7 +542,6 @@ class _ReservePageState extends State<ReservePage> {
 
                   const SizedBox(height: 25),
 
-                  // Rental Summary
                   if (startDate != null && endDate != null)
                     Card(
                       elevation: 2,
@@ -446,13 +610,11 @@ class _ReservePageState extends State<ReservePage> {
 
                   const SizedBox(height: 25),
 
-                  // Submit Button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: (loading || !isAvailable)
-                          ? null
-                          : submitReservation,
+                      onPressed:
+                          (loading || !isAvailable) ? null : submitReservation,
                       style: ElevatedButton.styleFrom(
                         padding: const EdgeInsets.all(16),
                         backgroundColor: Colors.green,
@@ -479,7 +641,6 @@ class _ReservePageState extends State<ReservePage> {
 
                   const SizedBox(height: 15),
 
-                  // Info Text
                   const Text(
                     "Your reservation will be pending until approved by admin.",
                     style: TextStyle(

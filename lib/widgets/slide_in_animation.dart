@@ -1,4 +1,3 @@
-// lib/widgets/slide_in_animation.dart
 import 'package:flutter/material.dart';
 
 class SlideInAnimation extends StatelessWidget {

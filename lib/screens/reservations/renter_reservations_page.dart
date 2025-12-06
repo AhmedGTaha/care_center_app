@@ -21,12 +21,10 @@ class RenterReservationsPage extends StatelessWidget {
       body: StreamBuilder<List<Reservation>>(
         stream: reservationService.getUserReservations(uid),
         builder: (context, snapshot) {
-          // Show loading indicator
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          // Show error if any
           if (snapshot.hasError) {
             return Center(
               child: Column(
@@ -44,7 +42,6 @@ class RenterReservationsPage extends StatelessWidget {
             );
           }
 
-          // Check if data exists
           if (!snapshot.hasData || snapshot.data == null) {
             return const Center(child: Text("No data available"));
           }
@@ -78,7 +75,6 @@ class RenterReservationsPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Equipment Name
                       Text(
                         res.equipmentName,
                         style: const TextStyle(
@@ -89,7 +85,6 @@ class RenterReservationsPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
 
-                      // Reservation Dates
                       Text(
                         "From: ${res.startDate.toString().split(' ')[0]}",
                         style: const TextStyle(fontSize: 16),
@@ -100,12 +95,10 @@ class RenterReservationsPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
 
-                      // Status Badge
                       _statusBadge(res.status),
 
                       const SizedBox(height: 14),
 
-                      // Cancel Reservation Button (for pending status)
                       if (res.status == "pending")
                         Align(
                           alignment: Alignment.centerRight,

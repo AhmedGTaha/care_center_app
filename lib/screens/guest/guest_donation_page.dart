@@ -22,9 +22,8 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
   int quantity = 1;
   File? selectedImage;
   bool submitting = false;
-
-  // Guest fixed info
-  final String guestUserId = "guest_user"; // Fixed guest user ID
+  
+  final String guestUserId = "guest_user";
   final String guestName = "Guest";
   final String guestEmail = "guest@example.com";
   final String guestPhone = "00000000";
@@ -87,9 +86,8 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
     try {
       final path = await saveDonationImage(selectedImage!);
 
-      // Submit donation with guest info
       await FirebaseFirestore.instance.collection("donations").add({
-        "userId": guestUserId, // Use fixed guest user ID
+        "userId": guestUserId, 
         "itemName": itemCtrl.text.trim(),
         "type": type,
         "description": descCtrl.text.trim(),
@@ -98,7 +96,6 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
         "condition": condition,
         "status": "pending",
         "createdAt": Timestamp.now(),
-        // Store guest info
         "donorName": guestName,
         "donorEmail": guestEmail,
         "donorPhone": guestPhone,
@@ -145,7 +142,6 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Guest Info Notice
               Container(
                 padding: const EdgeInsets.all(15),
                 decoration: BoxDecoration(
@@ -194,7 +190,6 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
 
               const SizedBox(height: 25),
 
-              // Image Picker
               const Text(
                 "Equipment Photo *",
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
@@ -235,7 +230,6 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
 
               const SizedBox(height: 20),
 
-              // Item Name
               TextFormField(
                 controller: itemCtrl,
                 decoration: const InputDecoration(
@@ -249,7 +243,6 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
 
               const SizedBox(height: 15),
 
-              // Type Dropdown
               DropdownButtonFormField(
                 decoration: const InputDecoration(
                   labelText: "Type *",
@@ -281,7 +274,6 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
 
               const SizedBox(height: 15),
 
-              // Condition Dropdown
               DropdownButtonFormField(
                 decoration: const InputDecoration(
                   labelText: "Condition *",
@@ -301,7 +293,6 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
 
               const SizedBox(height: 15),
 
-              // Quantity
               Row(
                 children: [
                   const Text("Quantity *",
@@ -340,7 +331,6 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
 
               const SizedBox(height: 15),
 
-              // Description
               TextFormField(
                 controller: descCtrl,
                 decoration: const InputDecoration(
@@ -355,7 +345,6 @@ class _GuestDonationPageState extends State<GuestDonationPage> {
 
               const SizedBox(height: 25),
 
-              // Submit Button
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(

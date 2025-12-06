@@ -32,7 +32,6 @@ class _EquipmentDetailsState extends State<EquipmentDetails> {
       final user = FirebaseAuth.instance.currentUser;
       
       if (user == null) {
-        // Not logged in - treat as guest
         setState(() {
           isGuest = true;
           loading = false;
@@ -40,14 +39,12 @@ class _EquipmentDetailsState extends State<EquipmentDetails> {
         return;
       }
 
-      // Check if user document exists in Firestore
       final userDoc = await FirebaseFirestore.instance
           .collection("users")
           .doc(user.uid)
           .get();
 
       setState(() {
-        // If document doesn't exist or user ID is "guest_user", it's a guest
         isGuest = !userDoc.exists || user.uid == "guest_user";
         loading = false;
       });
@@ -104,7 +101,6 @@ class _EquipmentDetailsState extends State<EquipmentDetails> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Equipment Image
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
               child: _isInvalidImage(widget.eq.imagePath)
@@ -124,7 +120,6 @@ class _EquipmentDetailsState extends State<EquipmentDetails> {
 
             const SizedBox(height: 20),
 
-            // Equipment Name
             Text(
               widget.eq.name,
               style: const TextStyle(
@@ -135,7 +130,6 @@ class _EquipmentDetailsState extends State<EquipmentDetails> {
 
             const SizedBox(height: 10),
 
-            // Type Badge
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -155,7 +149,6 @@ class _EquipmentDetailsState extends State<EquipmentDetails> {
 
             const SizedBox(height: 15),
 
-            // NEW: Tags Display
             if (widget.eq.tags.isNotEmpty)
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -183,7 +176,6 @@ class _EquipmentDetailsState extends State<EquipmentDetails> {
                 ],
               ),
 
-            // Description
             const Text(
               "Description",
               style: TextStyle(
@@ -201,7 +193,6 @@ class _EquipmentDetailsState extends State<EquipmentDetails> {
 
             const SizedBox(height: 20),
 
-            // Details Card
             Card(
               elevation: 2,
               child: Padding(
@@ -250,7 +241,6 @@ class _EquipmentDetailsState extends State<EquipmentDetails> {
 
             const SizedBox(height: 25),
 
-            // Reserve Button or Guest Message
             if (isGuest)
               Column(
                 children: [
@@ -345,7 +335,6 @@ class _EquipmentDetailsState extends State<EquipmentDetails> {
 
             const SizedBox(height: 15),
 
-            // Additional Info
             if (!isGuest && widget.eq.quantity > 0)
               const Text(
                 "Your reservation will be pending until approved by admin.",

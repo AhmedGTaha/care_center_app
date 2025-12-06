@@ -123,7 +123,6 @@ class _EquipmentFormState extends State<EquipmentForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // DONATION NOTICE
                   if (widget.isFromDonation)
                     Container(
                       padding: const EdgeInsets.all(15),
@@ -165,7 +164,6 @@ class _EquipmentFormState extends State<EquipmentForm> {
                       ),
                     ),
 
-                  // Name
                   TextFormField(
                     controller: nameCtrl,
                     decoration: const InputDecoration(
@@ -177,7 +175,6 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   ),
                   const SizedBox(height: 15),
 
-                  // Type
                   DropdownButtonFormField<String>(
                     initialValue: selectedType,
                     decoration: const InputDecoration(
@@ -193,7 +190,6 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   ),
                   const SizedBox(height: 15),
 
-                  // Description
                   TextFormField(
                     controller: descCtrl,
                     maxLines: 3,
@@ -206,7 +202,6 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   ),
                   const SizedBox(height: 15),
 
-                  // Condition
                   DropdownButtonFormField<String>(
                     initialValue: selectedCondition,
                     decoration: const InputDecoration(
@@ -222,7 +217,6 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   ),
                   const SizedBox(height: 15),
 
-                  // Location Field
                   TextFormField(
                     controller: locationCtrl,
                     decoration: const InputDecoration(
@@ -234,7 +228,6 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   ),
                   const SizedBox(height: 15),
 
-                  // Quantity
                   Row(
                     children: [
                       const Text(
@@ -278,7 +271,6 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   ),
                   const SizedBox(height: 15),
 
-                  // Price Per Day
                   TextFormField(
                     controller: priceCtrl,
                     keyboardType:
@@ -303,7 +295,6 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   ),
                   const SizedBox(height: 20),
 
-                  // Tags Section
                   const Text(
                     "Tags",
                     style: TextStyle(
@@ -341,7 +332,6 @@ class _EquipmentFormState extends State<EquipmentForm> {
                   ),
                   const SizedBox(height: 10),
 
-                  // Display Tags
                   if (tags.isNotEmpty)
                     Wrap(
                       spacing: 8,
@@ -359,7 +349,6 @@ class _EquipmentFormState extends State<EquipmentForm> {
 
                   const SizedBox(height: 20),
 
-                  // Image Selection
                   const Text(
                     "Equipment Image",
                     style: TextStyle(
@@ -412,7 +401,6 @@ class _EquipmentFormState extends State<EquipmentForm> {
 
                   const SizedBox(height: 25),
 
-                  // Save Button
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -427,7 +415,6 @@ class _EquipmentFormState extends State<EquipmentForm> {
                               await service.saveLocalImage(selectedImage!);
                         }
 
-                        // AUTOMATICALLY SET STATUS TO "donated" IF FROM DONATION
                         String equipmentStatus = "available";
                         if (widget.isFromDonation) {
                           equipmentStatus = "donated";
@@ -441,7 +428,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
                           imagePath: finalImage,
                           condition: selectedCondition!,
                           quantity: quantity,
-                          status: equipmentStatus, // SET TO "donated" if from donation
+                          status: equipmentStatus,
                           pricePerDay: double.parse(priceCtrl.text),
                           location: locationCtrl.text.trim(),
                           tags: tags,

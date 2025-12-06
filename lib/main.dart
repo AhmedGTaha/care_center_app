@@ -1,4 +1,3 @@
-// lib/main.dart - FIXED VERSION
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -8,7 +7,6 @@ import 'auth/login_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Set system UI overlay style
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
@@ -37,7 +35,6 @@ class CareCenterApp extends StatelessWidget {
   }
 }
 
-// Splash Screen with Animation
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
 

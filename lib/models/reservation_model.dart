@@ -8,8 +8,8 @@ class Reservation {
   final String equipmentType;
   final DateTime startDate;
   final DateTime endDate;
-  final String status; // pending, approved, rejected
-  final String lifecycleStatus; // Reserved, Checked Out, Returned, Maintenance
+  final String status; 
+  final String lifecycleStatus;
   final int rentalDays;
   final double totalCost;
   final double pricePerDay;

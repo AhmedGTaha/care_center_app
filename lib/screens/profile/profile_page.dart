@@ -153,7 +153,6 @@ class _ProfilePageState extends State<ProfilePage> {
           key: _formKey,
           child: Column(
             children: [
-              // Avatar Section
               GestureDetector(
                 onTap: editing ? pickAvatar : null,
                 child: Stack(
@@ -191,7 +190,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
               const SizedBox(height: 30),
 
-              // Role Badge
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 decoration: BoxDecoration(
@@ -224,7 +222,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
               const SizedBox(height: 30),
 
-              // Name Field
               TextFormField(
                 controller: nameCtrl,
                 enabled: editing,
@@ -240,7 +237,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
               const SizedBox(height: 15),
 
-              // Email Field (Read-only)
               TextFormField(
                 controller: emailCtrl,
                 enabled: false,
@@ -257,7 +253,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
               const SizedBox(height: 15),
 
-              // Phone Field
               TextFormField(
                 controller: phoneCtrl,
                 enabled: editing,
@@ -279,7 +274,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
               const SizedBox(height: 15),
 
-              // User ID Field (Read-only)
               TextFormField(
                 controller: userIdCtrl,
                 enabled: false,
@@ -296,7 +290,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
               const SizedBox(height: 20),
 
-              // Preferred Contact Method
               Container(
                 padding: const EdgeInsets.all(15),
                 decoration: BoxDecoration(
@@ -346,7 +339,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
               const SizedBox(height: 30),
 
-              // Action Buttons
               if (editing)
                 Row(
                   children: [
@@ -399,7 +391,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
               const SizedBox(height: 20),
 
-              // Account Statistics Card
               Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(

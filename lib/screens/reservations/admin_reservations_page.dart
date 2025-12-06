@@ -59,7 +59,6 @@ class AdminReservationsPage extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Equipment & User Info
                       Row(
                         children: [
                           Expanded(
@@ -86,7 +85,6 @@ class AdminReservationsPage extends StatelessWidget {
 
                       const SizedBox(height: 10),
 
-                      // Get User Info
                       FutureBuilder<DocumentSnapshot>(
                         future: FirebaseFirestore.instance
                             .collection("users")
@@ -124,7 +122,6 @@ class AdminReservationsPage extends StatelessWidget {
 
                       const Divider(height: 20),
 
-                      // Rental Details
                       _infoRow(
                           Icons.calendar_today,
                           "Start: ${res.startDate.toString().split(' ')[0]}"),
@@ -140,13 +137,11 @@ class AdminReservationsPage extends StatelessWidget {
 
                       const SizedBox(height: 12),
 
-                      // Lifecycle Status
                       if (res.status == "approved")
                         _lifecycleDropdown(context, res, reservationService),
 
                       const SizedBox(height: 12),
 
-                      // Action Buttons
                       if (res.status == "pending")
                         Row(
                           mainAxisAlignment: MainAxisAlignment.end,
@@ -274,7 +269,6 @@ class AdminReservationsPage extends StatelessWidget {
                 if (newStatus != null) {
                   await service.updateLifecycleStatus(res.id, newStatus);
 
-                  // If returned, increase equipment quantity back
                   if (newStatus == "Returned") {
                     final eqDoc = await FirebaseFirestore.instance
                         .collection("equipment")
@@ -314,7 +308,6 @@ class AdminReservationsPage extends StatelessWidget {
       BuildContext context) async {
     await service.rejectReservation(reservationId);
 
-    // SEND NOTIFICATION TO RENTER
     await notificationService.createNotification(
       userId: userId,
       title: "Reservation Rejected",
@@ -337,10 +330,8 @@ class AdminReservationsPage extends StatelessWidget {
       NotificationService notificationService,
       Reservation res,
       BuildContext context) async {
-    // Approve reservation
     await service.approveReservation(res.id);
 
-    // Decrease equipment quantity
     final eqDoc =
         await eqService.db.collection("equipment").doc(res.equipmentId).get();
 
@@ -354,7 +345,6 @@ class AdminReservationsPage extends StatelessWidget {
       }
     }
 
-    // SEND NOTIFICATION TO RENTER
     await notificationService.createNotification(
       userId: res.userId,
       title: "Reservation Approved",

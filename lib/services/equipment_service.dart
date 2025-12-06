@@ -6,10 +6,7 @@ import '../models/equipment_model.dart';
 
 class EquipmentService {
   final FirebaseFirestore db = FirebaseFirestore.instance;
-
-  // ---------------------------------------------------------
-  // SAVE IMAGE LOCALLY (App Documents Folder)
-  // ---------------------------------------------------------
+  
   Future<String> saveLocalImage(File file) async {
     try {
       final dir = await getApplicationDocumentsDirectory();
@@ -30,10 +27,7 @@ class EquipmentService {
       return "";
     }
   }
-
-  // ---------------------------------------------------------
-  // DELETE OLD IMAGE IF NEEDED
-  // ---------------------------------------------------------
+  
   Future<void> deleteLocalFile(String path) async {
     try {
       final file = File(path);
@@ -44,20 +38,14 @@ class EquipmentService {
       debugPrint("DELETE LOCAL FILE ERROR: $e");
     }
   }
-
-  // ---------------------------------------------------------
-  // ADD NEW EQUIPMENT (FIRESTORE)
-  // ---------------------------------------------------------
+  
   Future<void> addEquipment(Equipment eq) async {
     final docRef = db.collection("equipment").doc();
     eq.id = docRef.id;
 
     await docRef.set(eq.toMap());
   }
-
-  // ---------------------------------------------------------
-  // UPDATE EXISTING EQUIPMENT
-  // ---------------------------------------------------------
+  
   Future<void> updateEquipment(Equipment eq, {String? oldImagePath}) async {
     if (oldImagePath != null && oldImagePath.isNotEmpty) {
       if (oldImagePath != eq.imagePath) {
@@ -67,10 +55,7 @@ class EquipmentService {
 
     await db.collection("equipment").doc(eq.id).update(eq.toMap());
   }
-
-  // ---------------------------------------------------------
-  // DELETE EQUIPMENT
-  // ---------------------------------------------------------
+  
   Future<void> deleteEquipment(Equipment eq) async {
     if (eq.imagePath.isNotEmpty) {
       await deleteLocalFile(eq.imagePath);
@@ -78,10 +63,7 @@ class EquipmentService {
 
     await db.collection("equipment").doc(eq.id).delete();
   }
-
-  // ---------------------------------------------------------
-  // STREAM EQUIPMENT LIST
-  // ---------------------------------------------------------
+  
   Stream<List<Equipment>> getEquipmentStream() {
     return db.collection("equipment").snapshots().map((snapshot) {
       return snapshot.docs
