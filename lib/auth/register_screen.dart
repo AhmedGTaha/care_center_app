@@ -163,7 +163,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
               // Role Dropdown
               DropdownButtonFormField<String>(
-                value: role,
+                initialValue: role,
                 onChanged: (newRole) => setState(() => role = newRole!),
                 items: const [
                   DropdownMenuItem(value: "renter", child: Text("Renter")),

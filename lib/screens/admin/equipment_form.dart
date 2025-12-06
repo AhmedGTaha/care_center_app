@@ -179,7 +179,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
 
                   // Type
                   DropdownButtonFormField<String>(
-                    value: selectedType,
+                    initialValue: selectedType,
                     decoration: const InputDecoration(
                       labelText: "Type *",
                       border: OutlineInputBorder(),
@@ -208,7 +208,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
 
                   // Condition
                   DropdownButtonFormField<String>(
-                    value: selectedCondition,
+                    initialValue: selectedCondition,
                     decoration: const InputDecoration(
                       labelText: "Condition *",
                       border: OutlineInputBorder(),

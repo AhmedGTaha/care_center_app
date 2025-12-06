@@ -373,7 +373,7 @@ class _AdminEquipmentDetailsState extends State<AdminEquipmentDetails> {
                         ),
                         const SizedBox(height: 8),
                         DropdownButtonFormField<String>(
-                          value: currentStatus,
+                          initialValue: currentStatus,
                           decoration: InputDecoration(
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8),
