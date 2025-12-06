@@ -1,7 +1,7 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../models/equipment_model.dart';
 import '../../services/equipment_service.dart';
+import '../../services/image_service.dart';
 import 'equipment_form.dart';
 import 'admin_equipment_details.dart';
 
@@ -14,6 +14,7 @@ class AdminEquipmentList extends StatefulWidget {
 
 class _AdminEquipmentListState extends State<AdminEquipmentList> {
   final service = EquipmentService();
+  final imageService = ImageService();
   final searchCtrl = TextEditingController();
 
   String searchQuery = "";
@@ -43,8 +44,6 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
     "donated",
     "maintenance",
   ];
-
-  bool missing(String p) => p.isEmpty || !File(p).existsSync();
 
   List<String> getLocations(List<Equipment> items) {
     final locations = items
@@ -350,7 +349,6 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
                   itemCount: filteredItems.length,
                   itemBuilder: (_, i) {
                     final eq = filteredItems[i];
-                    final placeholder = "assets/default_equipment.png";
 
                     return Card(
                       elevation: 2,
@@ -371,11 +369,12 @@ class _AdminEquipmentListState extends State<AdminEquipmentList> {
                             children: [
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(8),
-                                child: missing(eq.imagePath)
-                                    ? Image.asset(placeholder,
-                                        height: 70, width: 70, fit: BoxFit.cover)
-                                    : Image.file(File(eq.imagePath),
-                                        height: 70, width: 70, fit: BoxFit.cover),
+                                child: imageService.getImageWidget(
+                                  eq.imagePath,
+                                  height: 70,
+                                  width: 70,
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                               const SizedBox(width: 12),
 

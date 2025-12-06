@@ -1,42 +1,24 @@
-import 'dart:io';
-import 'package:flutter/foundation.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
 import '../models/equipment_model.dart';
+import 'image_service.dart';
 
 class EquipmentService {
   final FirebaseFirestore db = FirebaseFirestore.instance;
+  final ImageService _imageService = ImageService();
   
-  Future<String> saveLocalImage(File file) async {
-    try {
-      final dir = await getApplicationDocumentsDirectory();
-      final equipmentDir = Directory("${dir.path}/equipment");
-
-      if (!equipmentDir.existsSync()) {
-        equipmentDir.createSync(recursive: true);
-      }
-
-      final fileName =
-          "eq_${DateTime.now().millisecondsSinceEpoch.toString()}.jpg";
-
-      final savedFile = await file.copy("${equipmentDir.path}/$fileName");
-
-      return savedFile.path;
-    } catch (e) {
-      debugPrint("SAVE LOCAL IMAGE ERROR: $e");
-      return "";
+  Future<String> saveLocalImage(dynamic file) async {
+    // file can be File (mobile) or XFile (web/mobile)
+    if (file is XFile) {
+      return await _imageService.saveImage(file, 'equipment');
     }
+    // Convert to XFile for compatibility
+    final xFile = XFile(file.path);
+    return await _imageService.saveImage(xFile, 'equipment');
   }
   
   Future<void> deleteLocalFile(String path) async {
-    try {
-      final file = File(path);
-      if (await file.exists()) {
-        await file.delete();
-      }
-    } catch (e) {
-      debugPrint("DELETE LOCAL FILE ERROR: $e");
-    }
+    await _imageService.deleteImage(path);
   }
   
   Future<void> addEquipment(Equipment eq) async {

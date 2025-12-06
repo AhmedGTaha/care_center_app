@@ -1,10 +1,9 @@
-import 'dart:io';
-
 import 'package:care_center_app/screens/renter/reserve_page.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../models/equipment_model.dart';
+import '../../services/image_service.dart';
 
 class EquipmentDetails extends StatefulWidget {
   final Equipment eq;
@@ -18,6 +17,7 @@ class EquipmentDetails extends StatefulWidget {
 class _EquipmentDetailsState extends State<EquipmentDetails> {
   bool isGuest = false;
   bool loading = true;
+  final ImageService _imageService = ImageService();
 
   @override
   void initState() {
@@ -56,8 +56,6 @@ class _EquipmentDetailsState extends State<EquipmentDetails> {
       });
     }
   }
-
-  bool _isInvalidImage(String p) => p.isEmpty || !File(p).existsSync();
 
   void _showGuestDialog() {
     showDialog(
@@ -103,19 +101,12 @@ class _EquipmentDetailsState extends State<EquipmentDetails> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: _isInvalidImage(widget.eq.imagePath)
-                  ? Image.asset(
-                      "assets/default_equipment.png",
-                      height: 200,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    )
-                  : Image.file(
-                      File(widget.eq.imagePath),
-                      height: 200,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
-                    ),
+              child: _imageService.getImageWidget(
+                widget.eq.imagePath,
+                height: 200,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
             ),
 
             const SizedBox(height: 20),
@@ -211,7 +202,6 @@ class _EquipmentDetailsState extends State<EquipmentDetails> {
                       "${widget.eq.quantity}",
                     ),
                     const Divider(),
-                    // NEW: Location Display
                     if (widget.eq.location.isNotEmpty) ...[
                       _detailRow(
                         Icons.location_on,

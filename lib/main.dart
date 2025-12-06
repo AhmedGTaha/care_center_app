@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'constants/app_theme.dart';
@@ -7,16 +8,35 @@ import 'auth/login_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.dark,
-      systemNavigationBarColor: Colors.white,
-      systemNavigationBarIconBrightness: Brightness.dark,
-    ),
-  );
+  // Only set system UI overlay style on mobile
+  if (!kIsWeb) {
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+    );
+  }
   
-  await Firebase.initializeApp();
+  // Initialize Firebase
+  // For web, Firebase is initialized in index.html
+  // For mobile, use the default initialization
+  if (kIsWeb) {
+    await Firebase.initializeApp(
+      options: const FirebaseOptions(
+        apiKey: "AIzaSyCyvwr-s8TOvlPvyWWXxuUWZmmO4rj8tVA",
+        authDomain: "care-center-ccdca.firebaseapp.com",
+        projectId: "care-center-ccdca",
+        storageBucket: "care-center-ccdca.firebasestorage.app",
+        messagingSenderId: "1044025031164",
+        appId: "1:1044025031164:web:c76354367c3c2bdd095a79" // Using Android app ID temporarily
+      ),
+    );
+  } else {
+    await Firebase.initializeApp();
+  }
 
   runApp(const CareCenterApp());
 }

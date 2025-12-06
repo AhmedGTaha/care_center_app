@@ -1,9 +1,9 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/equipment_model.dart';
 import '../../services/equipment_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/image_service.dart';
 import 'equipment_form.dart';
 
 class AdminEquipmentDetails extends StatefulWidget {
@@ -18,6 +18,7 @@ class AdminEquipmentDetails extends StatefulWidget {
 class _AdminEquipmentDetailsState extends State<AdminEquipmentDetails> {
   final equipmentService = EquipmentService();
   final notificationService = NotificationService();
+  final imageService = ImageService();
   bool loading = false;
   String currentStatus = "";
 
@@ -26,8 +27,6 @@ class _AdminEquipmentDetailsState extends State<AdminEquipmentDetails> {
     super.initState();
     currentStatus = widget.eq.status;
   }
-
-  bool _isInvalidImage(String p) => p.isEmpty || !File(p).existsSync();
 
   Future<void> _updateStatus(String newStatus) async {
     setState(() => loading = true);
@@ -161,22 +160,14 @@ class _AdminEquipmentDetailsState extends State<AdminEquipmentDetails> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Equipment Image
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: _isInvalidImage(widget.eq.imagePath)
-                        ? Image.asset(
-                            "assets/default_equipment.png",
-                            height: 200,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          )
-                        : Image.file(
-                            File(widget.eq.imagePath),
-                            height: 200,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
+                    child: imageService.getImageWidget(
+                      widget.eq.imagePath,
+                      height: 200,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
                   ),
 
                   const SizedBox(height: 20),

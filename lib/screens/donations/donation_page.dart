@@ -1,10 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb, Uint8List;
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/donation_service.dart';
+import '../../services/image_service.dart';
 
 class DonationPage extends StatefulWidget {
   const DonationPage({super.key});
@@ -21,38 +21,19 @@ class _DonationPageState extends State<DonationPage> {
 
   String type = "Wheelchair";
   String condition = "Good";
-
   int quantity = 1;
 
-  File? selectedImage;
+  XFile? selectedImage;
   bool submitting = false;
 
   final service = DonationService();
+  final imageService = ImageService();
 
   Future<void> pickImage() async {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked != null) {
-      setState(() => selectedImage = File(picked.path));
+      setState(() => selectedImage = picked);
     }
-  }
-
-  Future<String> saveDonationImage(File file) async {
-    final dir = await getApplicationDocumentsDirectory();
-    final donateDir = Directory("${dir.path}/donations");
-
-    if (!donateDir.existsSync()) {
-      donateDir.createSync(recursive: true);
-    }
-
-    final output = "${donateDir.path}/don_${DateTime.now().millisecondsSinceEpoch}.jpg";
-
-    final compressed = await FlutterImageCompress.compressAndGetFile(
-      file.path,
-      output,
-      quality: 70,
-    );
-
-    return compressed?.path ?? "";
   }
 
   Future<void> submitDonation() async {
@@ -66,7 +47,7 @@ class _DonationPageState extends State<DonationPage> {
     setState(() => submitting = true);
 
     try {
-      final path = await saveDonationImage(selectedImage!);
+      final path = await imageService.saveImage(selectedImage!, 'donations');
       final uid = FirebaseAuth.instance.currentUser!.uid;
 
       await service.submitDonation(
@@ -106,7 +87,6 @@ class _DonationPageState extends State<DonationPage> {
           key: _formKey,
           child: Column(
             children: [
-              
               const SizedBox(height: 10),
               GestureDetector(
                 onTap: pickImage,
@@ -121,10 +101,25 @@ class _DonationPageState extends State<DonationPage> {
                   child: selectedImage != null
                       ? ClipRRect(
                           borderRadius: BorderRadius.circular(12),
-                          child: Image.file(
-                            selectedImage!,
-                            fit: BoxFit.cover,
-                          ),
+                          child: kIsWeb
+                              ? FutureBuilder<Uint8List>(
+                                  future: selectedImage!.readAsBytes(),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.hasData) {
+                                      return Image.memory(
+                                        snapshot.data!,
+                                        fit: BoxFit.cover,
+                                      );
+                                    }
+                                    return const Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  },
+                                )
+                              : Image.file(
+                                  File(selectedImage!.path),
+                                  fit: BoxFit.cover,
+                                ),
                         )
                       : Column(
                           mainAxisAlignment: MainAxisAlignment.center,

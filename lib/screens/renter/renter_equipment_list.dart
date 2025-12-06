@@ -1,7 +1,7 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../models/equipment_model.dart';
 import '../../services/equipment_service.dart';
+import '../../services/image_service.dart';
 import 'equipment_details.dart';
 
 class RenterEquipmentList extends StatefulWidget {
@@ -13,6 +13,7 @@ class RenterEquipmentList extends StatefulWidget {
 
 class _RenterEquipmentListState extends State<RenterEquipmentList> {
   final service = EquipmentService();
+  final imageService = ImageService();
   final searchCtrl = TextEditingController();
 
   String searchQuery = "";
@@ -42,10 +43,6 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
     "donated",
     "maintenance",
   ];
-
-  bool _isInvalidImage(String path) {
-    return path.isEmpty || !File(path).existsSync();
-  }
 
   Color _getStatusColor(String status) {
     switch (status) {
@@ -296,7 +293,6 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
                   itemCount: filteredItems.length,
                   itemBuilder: (_, index) {
                     final eq = filteredItems[index];
-                    final invalid = _isInvalidImage(eq.imagePath);
                     final isAvailable = eq.quantity > 0 && eq.status == "available";
                     final isDonated = eq.pricePerDay == 0;
 
@@ -323,19 +319,12 @@ class _RenterEquipmentListState extends State<RenterEquipmentList> {
                             children: [
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(10),
-                                child: invalid
-                                    ? Image.asset(
-                                        "assets/default_equipment.png",
-                                        height: 80,
-                                        width: 80,
-                                        fit: BoxFit.cover,
-                                      )
-                                    : Image.file(
-                                        File(eq.imagePath),
-                                        height: 80,
-                                        width: 80,
-                                        fit: BoxFit.cover,
-                                      ),
+                                child: imageService.getImageWidget(
+                                  eq.imagePath,
+                                  height: 80,
+                                  width: 80,
+                                  fit: BoxFit.cover,
+                                ),
                               ),
 
                               const SizedBox(width: 12),

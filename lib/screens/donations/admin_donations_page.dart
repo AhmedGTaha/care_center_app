@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -7,6 +6,7 @@ import '../../models/equipment_model.dart';
 import '../../services/donation_service.dart';
 import '../../services/equipment_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/image_service.dart';
 import '../admin/equipment_form.dart';
 
 class AdminDonationsPage extends StatelessWidget {
@@ -15,6 +15,7 @@ class AdminDonationsPage extends StatelessWidget {
   final donationService = DonationService();
   final equipmentService = EquipmentService();
   final notificationService = NotificationService();
+  final imageService = ImageService();
 
   @override
   Widget build(BuildContext context) {
@@ -195,26 +196,15 @@ class AdminDonationsPage extends StatelessWidget {
                         },
                       ),
 
-                      if (d.imagePath.isNotEmpty && File(d.imagePath).existsSync())
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            File(d.imagePath),
-                            height: 130,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                        )
-                      else
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.asset(
-                            'assets/default_equipment.png',
-                            height: 130,
-                            width: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: imageService.getImageWidget(
+                          d.imagePath,
+                          height: 130,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
                         ),
+                      ),
 
                       const SizedBox(height: 10),
 

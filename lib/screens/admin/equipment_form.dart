@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 
 import '../../models/equipment_model.dart';
 import '../../services/equipment_service.dart';
+import '../../services/image_service.dart';
+import 'dart:typed_data';
 
 class EquipmentForm extends StatefulWidget {
   final Equipment? equipment;
@@ -36,12 +38,13 @@ class _EquipmentFormState extends State<EquipmentForm> {
   int quantity = 1;
   bool loading = false;
 
-  File? selectedImage;
+  XFile? selectedImage;
   String oldImagePath = "";
 
   List<String> tags = [];
 
   final service = EquipmentService();
+  final imageService = ImageService();
 
   final List<String> types = [
     "Wheelchair",
@@ -80,13 +83,7 @@ class _EquipmentFormState extends State<EquipmentForm> {
     final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
     if (picked == null) return;
 
-    final compressed = await FlutterImageCompress.compressAndGetFile(
-      picked.path,
-      "${picked.path}_compressed.jpg",
-      quality: 60,
-    );
-
-    setState(() => selectedImage = File(compressed?.path ?? picked.path));
+    setState(() => selectedImage = picked);
   }
 
   void addTag() {
@@ -370,17 +367,31 @@ class _EquipmentFormState extends State<EquipmentForm> {
                       child: selectedImage != null
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(12),
-                              child: Image.file(
-                                selectedImage!,
-                                fit: BoxFit.cover,
-                              ),
+                              child: kIsWeb
+                                  ? FutureBuilder<Uint8List>(
+                                      future: selectedImage!.readAsBytes(),
+                                      builder: (context, snapshot) {
+                                        if (snapshot.hasData) {
+                                          return Image.memory(
+                                            snapshot.data!,
+                                            fit: BoxFit.cover,
+                                          );
+                                        }
+                                        return const Center(
+                                          child: CircularProgressIndicator(),
+                                        );
+                                      },
+                                    )
+                                  : Image.file(
+                                      File(selectedImage!.path),
+                                      fit: BoxFit.cover,
+                                    ),
                             )
-                          : (oldImagePath.isNotEmpty &&
-                                  File(oldImagePath).existsSync()
+                          : (oldImagePath.isNotEmpty
                               ? ClipRRect(
                                   borderRadius: BorderRadius.circular(12),
-                                  child: Image.file(
-                                    File(oldImagePath),
+                                  child: imageService.getImageWidget(
+                                    oldImagePath,
                                     fit: BoxFit.cover,
                                   ),
                                 )
