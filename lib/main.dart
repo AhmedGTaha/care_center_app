@@ -8,7 +8,6 @@ import 'auth/login_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Only set system UI overlay style on mobile
   if (!kIsWeb) {
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
@@ -20,11 +19,8 @@ void main() async {
     );
   }
   
-  // Initialize Firebase
   try {
     if (kIsWeb) {
-      // For web, Firebase is already initialized in index.html
-      // But we still need to call this to connect Flutter to it
       await Firebase.initializeApp(
         options: const FirebaseOptions(
           apiKey: "AIzaSyCyvwr-s8TOvlPvyWWXxuUWZmmO4rj8tVA",

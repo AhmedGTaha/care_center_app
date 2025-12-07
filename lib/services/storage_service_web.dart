@@ -1,4 +1,3 @@
-// This file handles storage for web platform
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:typed_data';
 

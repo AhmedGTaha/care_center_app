@@ -79,9 +79,7 @@ class _ProfilePageState extends State<ProfilePage> {
       final uid = FirebaseAuth.instance.currentUser!.uid;
       String finalAvatarUrl = avatarUrl;
 
-      // Save new avatar if selected
       if (newAvatar != null) {
-        // Delete old avatar if it exists and is a Firebase URL (web)
         if (kIsWeb && avatarUrl.isNotEmpty && avatarUrl.startsWith('http')) {
           await _imageService.deleteImage(avatarUrl);
         }
@@ -130,7 +128,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildAvatar() {
     if (kIsWeb) {
-      // Web: Show preview of new avatar or existing URL
       if (newAvatar != null) {
         return FutureBuilder<Uint8List>(
           future: newAvatar!.readAsBytes(),
@@ -162,7 +159,6 @@ class _ProfilePageState extends State<ProfilePage> {
         );
       }
     } else {
-      // Mobile: Show local file or network image
       if (newAvatar != null) {
         return CircleAvatar(
           radius: 60,

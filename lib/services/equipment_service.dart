@@ -8,11 +8,9 @@ class EquipmentService {
   final ImageService _imageService = ImageService();
   
   Future<String> saveLocalImage(dynamic file) async {
-    // file can be File (mobile) or XFile (web/mobile)
     if (file is XFile) {
       return await _imageService.saveImage(file, 'equipment');
     }
-    // Convert to XFile for compatibility
     final xFile = XFile(file.path);
     return await _imageService.saveImage(xFile, 'equipment');
   }

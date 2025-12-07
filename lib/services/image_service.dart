@@ -8,37 +8,30 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:path_provider/path_provider.dart';
 
 class ImageService {
-  // ⚠️ REPLACE THESE WITH YOUR CLOUDINARY CREDENTIALS
-  static const String cloudName = "dbjfoekyy";  // Replace this
-  static const String uploadPreset = "care_center_uploads";     // Use "ml_default" or create your own
+  static const String cloudName = "dbjfoekyy";  
+  static const String uploadPreset = "care_center_uploads";
   
-  /// Save image - works for both web and mobile
   Future<String> saveImage(XFile imageFile, String folder) async {
     if (kIsWeb) {
       return await _uploadToCloudinary(imageFile, folder);
     } else {
-      // For mobile, still save locally
       return await _saveImageMobile(imageFile, folder);
     }
   }
 
-  /// Upload image to Cloudinary (works on web and mobile)
   Future<String> _uploadToCloudinary(XFile imageFile, String folder) async {
     try {
       debugPrint('📤 Starting Cloudinary upload...');
       
-      // Read image bytes
       final bytes = await imageFile.readAsBytes();
       final base64Image = base64Encode(bytes);
       
       debugPrint('📸 Image size: ${bytes.length} bytes');
       
-      // Cloudinary upload URL
       final url = Uri.parse(
         'https://api.cloudinary.com/v1_1/$cloudName/image/upload'
       );
       
-      // Prepare form data
       final request = http.MultipartRequest('POST', url);
       request.fields['upload_preset'] = uploadPreset;
       request.fields['folder'] = folder;
@@ -52,7 +45,6 @@ class ImageService {
       
       debugPrint('🚀 Uploading to Cloudinary...');
       
-      // Send request with timeout
       final streamedResponse = await request.send().timeout(
         const Duration(seconds: 30),
         onTimeout: () {
@@ -78,7 +70,6 @@ class ImageService {
     }
   }
 
-  /// Save image on mobile (local storage)
   Future<String> _saveImageMobile(XFile imageFile, String folder) async {
     try {
       final dir = await getApplicationDocumentsDirectory();
@@ -103,10 +94,8 @@ class ImageService {
     }
   }
 
-  /// Delete image - only works for mobile local files
   Future<void> deleteImage(String imagePath) async {
     if (kIsWeb) {
-      // On web with Cloudinary, we can't delete (or we'd need API key/secret)
       debugPrint('🗑️ Skipping delete on web (Cloudinary images persist)');
       return;
     } else {
@@ -114,7 +103,6 @@ class ImageService {
     }
   }
 
-  /// Delete image from local storage (mobile)
   Future<void> _deleteImageMobile(String imagePath) async {
     try {
       if (imagePath.isEmpty) return;
@@ -128,14 +116,12 @@ class ImageService {
     }
   }
 
-  /// Get image widget - works for both web and mobile
   Widget getImageWidget(String imagePath, {
     double? width,
     double? height,
     BoxFit fit = BoxFit.cover,
     String defaultAsset = 'assets/default_equipment.png',
   }) {
-    // Handle empty or invalid paths
     if (imagePath.isEmpty) {
       return Image.asset(
         defaultAsset,
@@ -153,7 +139,6 @@ class ImageService {
       );
     }
 
-    // Check if it's a Cloudinary URL or any HTTP URL
     if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
       return Image.network(
         imagePath,
@@ -187,7 +172,6 @@ class ImageService {
       );
     }
     
-    // For mobile local files
     if (!kIsWeb) {
       if (!File(imagePath).existsSync()) {
         return Image.asset(
@@ -213,7 +197,6 @@ class ImageService {
       );
     }
     
-    // Fallback
     return Image.asset(
       defaultAsset,
       width: width,
@@ -222,7 +205,6 @@ class ImageService {
     );
   }
 
-  /// Check if image path is valid
   bool isValidImage(String imagePath) {
     if (imagePath.isEmpty) return false;
     

@@ -40,7 +40,6 @@ class RentalTrackingPage extends StatelessWidget {
 
           final reservations = snapshot.data!;
 
-          // Separate current and past rentals
           final current = reservations
               .where((r) =>
                   r.status == "approved" &&
@@ -109,7 +108,6 @@ class RentalTrackingPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Equipment Name
                 Row(
                   children: [
                     Expanded(
@@ -127,7 +125,6 @@ class RentalTrackingPage extends StatelessWidget {
 
                 const SizedBox(height: 8),
 
-                // Dates
                 _infoRow(Icons.calendar_today,
                     "Start: ${res.startDate.toString().split(' ')[0]}"),
                 const SizedBox(height: 4),
@@ -136,7 +133,6 @@ class RentalTrackingPage extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
-                // Duration & Status
                 if (isCurrent)
                   Container(
                     padding: const EdgeInsets.all(10),
@@ -185,7 +181,6 @@ class RentalTrackingPage extends StatelessWidget {
 
                 const SizedBox(height: 10),
 
-                // User info (for admin)
                 if (isAdmin)
                   FutureBuilder<DocumentSnapshot>(
                     future: FirebaseFirestore.instance

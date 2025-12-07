@@ -1,35 +1,28 @@
-// lib/constants/app_theme.dart
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Brand Colors
   static const Color primaryColor = Color(0xFF2563EB); // Blue
   static const Color secondaryColor = Color(0xFF10B981); // Green
   static const Color accentColor = Color(0xFFF59E0B); // Orange
   static const Color errorColor = Color(0xFFEF4444); // Red
   
-  // Background Colors
   static const Color backgroundColor = Color(0xFFF8FAFC);
   static const Color surfaceColor = Color(0xFFFFFFFF);
   static const Color cardColor = Color(0xFFFFFFFF);
   
-  // Text Colors
   static const Color textPrimary = Color(0xFF1E293B);
   static const Color textSecondary = Color(0xFF64748B);
   static const Color textLight = Color(0xFF94A3B8);
   
-  // Status Colors
   static const Color successColor = Color(0xFF10B981);
   static const Color warningColor = Color(0xFFF59E0B);
   static const Color infoColor = Color(0xFF3B82F6);
   
-  // Equipment Status Colors
   static const Color availableColor = Color(0xFF10B981);
   static const Color rentedColor = Color(0xFFF59E0B);
   static const Color donatedColor = Color(0xFF3B82F6);
   static const Color maintenanceColor = Color(0xFFEF4444);
   
-  // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
     colors: [Color(0xFF2563EB), Color(0xFF1D4ED8)],
     begin: Alignment.topLeft,
@@ -48,7 +41,6 @@ class AppTheme {
     end: Alignment.bottomRight,
   );
   
-  // Shadows
   static List<BoxShadow> cardShadow = [
     BoxShadow(
       color: Colors.black.withOpacity(0.08),
@@ -65,20 +57,17 @@ class AppTheme {
     ),
   ];
   
-  // Border Radius
   static const BorderRadius borderRadiusSmall = BorderRadius.all(Radius.circular(8));
   static const BorderRadius borderRadiusMedium = BorderRadius.all(Radius.circular(12));
   static const BorderRadius borderRadiusLarge = BorderRadius.all(Radius.circular(16));
   static const BorderRadius borderRadiusXLarge = BorderRadius.all(Radius.circular(24));
   
-  // Spacing
   static const double spacingXSmall = 4;
   static const double spacingSmall = 8;
   static const double spacingMedium = 16;
   static const double spacingLarge = 24;
   static const double spacingXLarge = 32;
   
-  // Typography
   static const TextStyle headingXLarge = TextStyle(
     fontSize: 32,
     fontWeight: FontWeight.bold,
@@ -141,7 +130,6 @@ class AppTheme {
     letterSpacing: 0.5,
   );
   
-  // Theme Data
   static ThemeData get lightTheme {
     return ThemeData(
       useMaterial3: true,
@@ -231,7 +219,6 @@ class AppTheme {
   }
 }
 
-// lib/widgets/animated_button.dart
 class AnimatedButton extends StatefulWidget {
   final String text;
   final VoidCallback? onPressed;
